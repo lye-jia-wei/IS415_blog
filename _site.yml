@@ -1,8 +1,8 @@
-name: "R4DSA"
-title: "R4DSA"
+name: "IS415_Blog"
+title: "IS415_Blog"
 description: |
-  IS415 Web Blog
-output_dir: "_site"
+  IS415_Blog
+output_dir: "docs"
 navbar:
   right:
     - text: "Home"

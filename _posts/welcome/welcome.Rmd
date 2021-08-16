@@ -1,13 +1,13 @@
 ---
-title: "Welcome to R for Data Science and Analytics"
+title: "Welcome to IS415_Blog"
 description: |
-  This blog consists of a collection of R tutorials,notebooks tips
-  and tricks.We hope you enjoy reading what we have to say!
+  Welcome to our new blog, IS415_Blog. We hope you enjoy 
+  reading what we have to say!
 author:
-  - name: Lye Jia Wei
-    url: https://www.linkedin.com/in/lyejiawei/
-    affiliation: School of Computing and Information Systems, Singapore Management University
-    affiliation_url: https://lye-jia-wei.github.io/
+  - name: Nora Jones 
+    url: https://example.com/norajones
+    affiliation: Spacely Sprockets
+    affiliation_url: https://example.com/spacelysprokets
 date: 08-16-2021
 output:
   distill::distill_article:
