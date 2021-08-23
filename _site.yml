@@ -1,14 +1,14 @@
-name: "IS415_blog"
-title: "IS415_blog"
+name: "IS415 blog"
+title: "IS415 blog"
 description: |
   IS415 blog
 output_dir: "_site"
 navbar:
   right:
     - text: "Take-home Exercise"
-    menu: 
-    - text:"Take-home Exercise 1"
-      href: 
+      menu: 
+      - text: "Take-home Exercise 1"
+        href: 
     - text: "In-class Exercise"
       href: index.html
     - text: "About"

@@ -1,19 +1,19 @@
 [
   {
     "path": "posts/welcome/",
-    "title": "Welcome to R for Data Science and Analytics",
-    "description": "This blog consists of a collection of R tutorials,notebooks tips\nand tricks.We hope you enjoy reading what we have to say!",
+    "title": "Welcome to IS415 blog",
+    "description": "Welcome to our new blog, IS415 blog. We hope you enjoy \nreading what we have to say!",
     "author": [
       {
         "name": "Lye Jia Wei",
-        "url": "https://www.linkedin.com/in/lyejiawei/"
+        "url": "https://lye-jia-wei.github.io/"
       }
     ],
-    "date": "2021-08-16",
+    "date": "2021-08-23",
     "categories": [],
     "contents": "\r\n\r\n\r\n\r\n",
     "preview": {},
-    "last_modified": "2021-08-16T16:05:08+08:00",
-    "input_file": "welcome.knit.md"
+    "last_modified": "2021-08-23T09:45:46+08:00",
+    "input_file": {}
   }
 ]
