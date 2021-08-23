@@ -1,5 +1,5 @@
 ---
-title: "IS415_Blog"
+title: "IS415 blog"
 site: distill::distill_website
 listing: posts
 ---
