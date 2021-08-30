@@ -40,7 +40,9 @@ for(p in packages){
 mpsz = st_read(dsn = "data/geospatial", 
                   layer = "MP14_SUBZONE_WEB_PL")
 ```
-Geospatial objects are multipolygon features, with a total of 323 multipolygon features and 15 fields in mpsz simple feature data frame with svy21 projected coordinates system.
+Geospatial objects are multipolygon features, with a total of 323 multipolygon 
+features and 15 fields in mpsz simple feature data frame with svy21 projected 
+coordinates system.
 
 ### 2.2 Importing polyline feature data in shapefile for
 ```{r echo=TRUE, eval=TRUE}
@@ -60,7 +62,8 @@ There a total of 1359 point features and 2 fields in wgs84 coordinates system.
 st_geometry(mpsz)
 glimpse(mpsz)
 ```
-FMEL-UPD_D field is in date data type and X_ADDR, Y_ADDR, SHAPE_L and SHAPE_AREA fields are all in double-precision values.
+FMEL-UPD_D field is in date data type and X_ADDR, Y_ADDR, SHAPE_L and SHAPE_AREA 
+fields are all in double-precision values.
 
 ```{r echo=TRUE, eval=TRUE}
 head(mpsz, n=5)  
@@ -79,7 +82,8 @@ plot(mpsz["PLN_AREA_N"])
 ```{r echo=TRUE, eval=TRUE}
 st_crs(mpsz)
 ```
-Result shows that EPSG is 9001 which is a wrong EPSG code because the correct EPSG code for svy21 should be 3414.
+Result shows that EPSG is 9001 which is a wrong EPSG code because the correct 
+EPSG code for svy21 should be 3414.
 
 ```{r echo=TRUE, eval=TRUE}
 mpsz3414 <- st_set_crs(mpsz, 3414)

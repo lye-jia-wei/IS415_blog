@@ -2,18 +2,18 @@
   "articles": [
     {
       "path": "about.html",
-      "title": "About this blog",
-      "description": "Some additional details about the blog",
+      "title": "R for Data Science and Analytics",
+      "description": "This blog showcase some of my geospatial projects",
       "author": [],
       "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-08-23T11:32:13+08:00"
+      "last_modified": "2021-08-30T18:11:26+08:00"
     },
     {
       "path": "index.html",
       "title": "IS415 blog",
       "author": [],
       "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-08-23T11:32:14+08:00"
+      "last_modified": "2021-08-30T18:11:27+08:00"
     }
   ],
   "collections": ["posts/posts.json"]

@@ -4,6 +4,9 @@ description: |
   IS415 blog
 output_dir: "_site"
 navbar:
+  logo:
+      image: images/logo.png
+      href: https://www.rstudio.com
   right:
     - text: "Take-home Exercise"
       menu: 
