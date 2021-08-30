@@ -5,8 +5,8 @@ description: |
 output_dir: "_site"
 navbar:
   logo:
-      image: images/logo.png
-      href: https://www.rstudio.com
+      image: C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/images/logo.png
+      href: C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/images/logo.png
   right:
     - text: "Take-home Exercise"
       menu: 
