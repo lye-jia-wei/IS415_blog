@@ -16,7 +16,7 @@ output:
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## Getting Started
+## 1. Getting Started
 
 This code chunk performs three task:
 
@@ -33,4 +33,165 @@ for(p in packages){
 
 ```
 
+## 2. Importing Geospatial Data
 
+### 2.1 Importing polygon feature data in shapefile format
+```{r echo=TRUE, eval=TRUE}
+mpsz = st_read(dsn = "data/geospatial", 
+                  layer = "MP14_SUBZONE_WEB_PL")
+```
+Geospatial objects are multipolygon features, with a total of 323 multipolygon features and 15 fields in mpsz simple feature data frame with svy21 projected coordinates system.
+
+### 2.2 Importing polyline feature data in shapefile for
+```{r echo=TRUE, eval=TRUE}
+cyclingpath = st_read(dsn = "data/geospatial", 
+                         layer = "CyclingPath")
+```
+There are a total of 1625 features with svy21 projected coordinates system.
+
+### 2.3 Importing GIS data in kml format
+```{r echo=TRUE, eval=TRUE}
+preschool = st_read("data/geospatial/pre-schools-location-kml.kml")
+```
+There a total of 1359 point features and 2 fields in wgs84 coordinates system. 
+
+## 3. Checking the Content of Simple Feature Data Frame
+```{r echo=TRUE, eval=TRUE}
+st_geometry(mpsz)
+glimpse(mpsz)
+```
+FMEL-UPD_D field is in date data type and X_ADDR, Y_ADDR, SHAPE_L and SHAPE_AREA fields are all in double-precision values.
+
+```{r echo=TRUE, eval=TRUE}
+head(mpsz, n=5)  
+```
+
+## 4. Plotting the Geospatial Data
+
+```{r echo=TRUE, eval=TRUE}
+plot(mpsz)
+plot(st_geometry(mpsz))
+plot(mpsz["PLN_AREA_N"])
+```
+## 5. Working with Projection
+### 5.1 Assigning EPSG code to a simple feature data frame
+
+```{r echo=TRUE, eval=TRUE}
+st_crs(mpsz)
+```
+Result shows that EPSG is 9001 which is a wrong EPSG code because the correct EPSG code for svy21 should be 3414.
+
+```{r echo=TRUE, eval=TRUE}
+mpsz3414 <- st_set_crs(mpsz, 3414)
+```
+This is to assign the correct EPSG code to mpsz data frame
+
+```{r echo=TRUE, eval=TRUE}
+st_crs(mpsz3414)
+```
+Check the CSR
+
+### 5.2 Transforming the projection of preschool from wgs84 to svy21
+```{r echo=TRUE, eval=TRUE}
+preschool3414 <- st_transform(preschool, 
+                              crs = 3414)
+```
+
+## 6. Importing and Converting An Aspatial Data
+
+### 6.1 Importing the aspatial data
+```{r echo=TRUE, eval=TRUE}
+listings <- read_csv("data/aspatial/listings.csv")
+glimpse(listings) 
+```
+
+### 6.2 Creating a simple feature data frame from an aspatial data frame
+
+```{r echo=TRUE, eval=TRUE}
+listings_sf <- st_as_sf(listings, 
+                       coords = c("longitude", "latitude"),
+                       crs=4326) %>%
+  st_transform(crs = 3414) 
+```
+Converts listing data frame into a simple feature data frame 
+
+```{r echo=TRUE, eval=TRUE}
+glimpse(listings_sf)
+```
+Examine the content of this newly created simple feature data frame.
+
+## 7. Geoprocessing with sf package
+
+### 7.1 Buffering
+
+```{r echo=TRUE, eval=TRUE}
+buffer_cycling <- st_buffer(cyclingpath, 
+                               dist=5, nQuadSegs = 30)
+```
+Compute the 5-meter buffers around cycling paths
+
+```{r echo=TRUE, eval=TRUE}
+buffer_cycling$AREA <- st_area(buffer_cycling)
+```
+Calculating the area of the buffers
+
+```{r echo=TRUE, eval=TRUE}
+sum(buffer_cycling$AREA)
+```
+Find out the total land involved
+
+### 7.2 Point-in-polygon count
+```{r echo=TRUE, eval=TRUE}
+mpsz3414$`PreSch Count`<- lengths(st_intersects(mpsz3414, preschool3414))
+```
+Identify pre-schools located inside each Planning Subzone and calculate numbers of pre-schools that fall inside each planning subzone
+
+```{r echo=TRUE, eval=TRUE}
+summary(mpsz3414$`PreSch Count`)
+```
+Check the summary statistics of the newly derived PreSch Count field
+
+```{r echo=TRUE, eval=TRUE}
+top_n(mpsz3414, 1, `PreSch Count`)
+```
+List the planning subzone with the most number of pre-school
+
+```{r echo=TRUE, eval=TRUE}
+mpsz3414$Area <- mpsz3414 %>%
+  st_area()
+
+mpsz3414 <- mpsz3414 %>%
+  mutate(`PreSch Density` = `PreSch Count`/ Area * 1000000)
+```
+Derive the area of each planning subzone and compute the density
+
+## 8. Explorotary Data Analysis (EDA)
+
+### 8.1 Histogram
+```{r echo=TRUE, eval=TRUE}
+hist(mpsz3414$`PreSch Density`)
+
+ggplot(data=mpsz3414, 
+       aes(x= as.numeric(`PreSch Density`)))+
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue") +
+  labs(title = "Are pre-school even distributed in Singapore?",
+       subtitle= "There are many planning sub-zones with a single pre-school, on the other hand, \nthere are two planning sub-zones with at least 20 pre-schools",
+      x = "Pre-school density (per km sq)",
+      y = "Frequency")
+```
+Histogram to reveal the distribution of PreSch Density
+
+### 8.2 Scatterplot
+
+
+```{r echo=TRUE, eval=TRUE}
+ggplot(data=mpsz3414, aes(x= as.numeric(`PreSch Density`), y=`PreSch Count`)) +
+  geom_point()+
+labs(title = "Relationship between Pre-school Density and Pre-school Count.",
+       subtitle= "change later",
+      x = "Pre-school density (per km sq)",
+      y = "Pre-school Count")
+
+```
