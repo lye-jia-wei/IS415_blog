@@ -1,7 +1,8 @@
 ---
 title: "In-class Exercise 3"
 description: |
-  In this hands-on exercise, I learn how to plot functional and truthful choropleth maps by using tmap.
+  This in-class exercise aims to identify planning subzones with extreme high or
+  low numbers of aged population.
 author:
   - name: Lye Jia Wei
     url: https://lye-jia-wei.github.io/
@@ -11,16 +12,24 @@ output:
     self_contained: false
 ---
 
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## 1. Getting Started
+## 1.0 Problem Statement 
+How to identify planning subzones with extreme high or low numbers of aged population?
 
-This code chunk performs three task:
 
-- create a list of R packages needed.
+## 2.0 Getting Started
+In this in-class exercise, the key R package use is tmap package in R. Beside
+tmap package, three other R packages will be used. They are:
+
+- readr for importing delimited text file,
+- tidyr for tidying data,
+- sf for handling geospatial data.
+
+
+This code chunk will be used to install and load these packages in RStudio.
 
 ```{r echo=TRUE, eval=TRUE}
 packages <- c('sf','tidyverse','tmap')
@@ -33,26 +42,35 @@ for(p in packages){
 
 ```
 
-## 2. Importing Geospatial Data into R
-### 2.1 Data
+## 3.0 Importing Data into R 
 
-- Master Plan 2014 Subzone Boundary(Web)
--Singapore Redients by Planning Area/Subzone,Age Group,Sex and Type of Dwelling June 2011-2020
+### 3.1 Data
+Two data set will be used to create percentile map and they are:
 
-### 2.2 Importing Geospatial Data into R
+- Master Plan 2014 Subzone Boundary (Web) in ESRI shapefile
+- Singapore Residents by Planning Area / Subzone, Age Group, Sex and Type of 
+Dwelling, June 2011-2020 in csv format 
+
+
+### 3.2 Importing Geospatial Data into R
+
+The code chunk below uses the st_read() function of sf package to import 
+MP14_SUBZONE_WEB_PL shapefile into R as a simple feature data frame called mpsz.
+
 ```{r echo=TRUE, eval=TRUE}
-mpsz <- st_read(dsn = "data/geospatial", 
-                layer = "MP14_SUBZONE_WEB_PL")
-mpsz
+mpsz <- st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_WEB_PL")
 ```
 
-### 2.3 Importing Attribute Data into R
-### 2.2 Importing Geospatial Data into R
+### 3.3 Importing Attribute Data into R
+
+The task will be performed by using read_csv() function of readr package as 
+shown in the code chunk below.
+
 ```{r echo=TRUE, eval=TRUE}
 popdata <- read_csv("data/aspatial/respopagesexfa2011to2020.csv")
 ```
 
-### 2.4 Data Preparation
+### 3.4 Data Preparation
 
 Data table will consist of the following variables:
 -YOUNG: age group 0 to 4 until age groyup 20 to 24,
@@ -62,7 +80,13 @@ Data table will consist of the following variables:
 -DEPENDENCY: the ratio between young and aged against economy active group
 
 
-#### 2.4.1 Data Wrangling
+#### 3.4.1 Data Wrangling
+
+The following data wrangling and transformation functions will be used:
+
+- pivot_wider() of tidyr package, and
+- mutate(), filter(), group_by() and select() of dplyr package
+
 ```{r echo=TRUE, eval=TRUE}
 
 popdata2020 <- popdata %>%
@@ -86,7 +110,11 @@ mutate(`DEPENDENCY` = (`YOUNG` + `AGED`)
 
 ```
 
-#### 2.4.2 Joining the Attribute Data and Geospatial Data
+#### 3.4.2 Joining the Attribute Data and Geospatial Data
+
+Convert the values in PA and SZ fields to uppercase since the values of PA and 
+SZ fields are made up of upper- and lowercase. On the other, hand the SUBZONE_N 
+and PLN_AREA_N are in uppercase. 
 
 ```{r echo=TRUE, eval=TRUE}
 popdata2020 <- popdata2020 %>%
@@ -94,277 +122,206 @@ popdata2020 <- popdata2020 %>%
           .funs = funs(toupper)) %>%
   filter(`ECONOMY ACTIVE` > 0)
 ```
-Convert the values in PA and SZ fields to uppercase since the values of PA and SZ fields are made up of upper- and lowercase. 
+
+Join the geographical data and attribute table using planning subzone name - 
+SUBZONE_N and SZ as the common identifier.
 
 ```{r echo=TRUE, eval=TRUE}
 mpsz_pop2020 <- left_join(mpsz, popdata2020,
                           by = c("SUBZONE_N" = "SZ"))
 ```
-Join the geographical data and attribute table using planning subzone name - SUBZONE_N and SZ as the common identifier.
 
-## 3. Chloropleth Mapping Geospatial Data
+### 4.0 Analytic Mapping
 
-### 3.1 Plotting choropleth map using qtm()
+#### 4.1 Boxplot
+
+Visualisation technique to show the statistics and distribution of data values
 ```{r echo=TRUE, eval=TRUE}
-tmap_mode("plot")
-qtm(mpsz_pop2020, 
-    fill = "DEPENDENCY")
-```
+mpsz_pop2020 <- left_join(mpsz, popdata2020,
+                          by = c("SUBZONE_N" = "SZ"))
+```   
+From this boxplot, it can be seen that there are 6 outliers
 
-### 3.2 Creating a choropleth map by using tmap’s elements()
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY", 
-          style = "quantile", 
-          palette = "Blues",
-          title = "Dependency ratio") +
-  tm_layout(main.title = "Distribution of Dependency Ratio by planning subzone",
-            main.title.position = "center",
-            main.title.size = 1.2,
-            legend.height = 0.45, 
-            legend.width = 0.35,
-            frame = TRUE) +
-  tm_borders(alpha = 0.5) +
-  tm_compass(type="8star", size = 2) +
-  tm_scale_bar() +
-  tm_grid(alpha =0.2) +
-  tm_credits("Source: Planning Sub-zone boundary from Urban Redevelopment Authorithy (URA)\n and Population data from Department of Statistics DOS", 
-             position = c("left", "bottom"))
-```
+#### 4.2 Percentile Map
 
-#### 3.2.1 Drawing Base Map
+#### 4.2.1  Exclude records with NA by using the code chunl below
 ```{r echo=TRUE, eval=TRUE}
+mpsz_pop2020a <- mpsz_pop2020 %>% drop_na()
+```  
+
+#### 4.2.2 Create Quantile
+```{r echo=TRUE, eval=TRUE}
+percent <- c(0,.01,.1,.5,.9,.99,1)
+var <- mpsz_pop2020a["DEPENDENCY"] %>%
+  st_set_geometry(NULL)
+quantile(var[,1], percent)
+```  
+#### 4.2.3 Creating the get.var function
+
+The code chunk is an R function to extract a variable as a vector out of an sf 
+data frame.
+```{r echo=TRUE, eval=TRUE}
+get.var <- function(vname,df) {
+  v <- df[vname] %>% 
+    st_set_geometry(NULL)
+  v <- unname(v[,1])
+  return(v)
+}
+```  
+
+#### 4.2.4 Plotting a percentile map using tmap functions
+
+```{r echo=TRUE, eval=TRUE}
+percent <- c(0,.01,.1,.5,.9,.99,1)
+var <- get.var("DEPENDENCY", mpsz_pop2020a)
+bperc <- quantile(var,percent)
 tm_shape(mpsz_pop2020) +
-  tm_polygons()
-```
-
-#### 3.2.2 Drawing Choropleth Map using TM_Polygons()
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_polygons("DEPENDENCY")
-```
-
-#### 3.2.3 Drawing Choropleth Map using TM_Fill() and TM_Border()
-
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY")
-```
-
-Adding border
-
-
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY") +
-  tm_borders(lwd = 0.1,  alpha = 1)
-```
-
-### 3.3 Data classification methods of tmap
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
+  tm_polygons() +
+tm_shape(mpsz_pop2020a) +
   tm_fill("DEPENDENCY",
-          n = 5,
-          style = "jenks") +
-  tm_borders(alpha = 0.5)
-```
-Quantile data classification that used 5 classes.
+          title="DEPENDENCY",
+          breaks=bperc,
+          palette="Blues",
+          labels=c("< 1%", "1% - 10%",
+                   "10% - 50%", 
+                   "50% - 90%",
+                   "90% - 99%", 
+                   "> 99%"))  +
+  tm_borders() +
+  tm_layout(title = "Percentile Map", 
+            title.position = c("right",
+                               "bottom"))
+```  
+
+#### 4.2.5 Creating a percentile mapping function
+
+The code chunk is an R function to extract a variable as a vector out of an sf 
+data frame.
 
 ```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY",
-          n = 5,
-          style = "equal") +
-  tm_borders(alpha = 0.5)
-```
-Equal data classification method
+percentmap <- function(vnam, df, legtitle=NA, mtitle="Percentile Map"){
+  percent <- c(0,.01,.1,.5,.9,.99,1)
+  var <- get.var(vnam,df)
+  bperc <- quantile(var,percent)
+  tm_shape(mpsz_pop2020) +
+  tm_polygons() +
+  tm_shape(df) +
+     tm_fill(vnam,
+             title=legtitle,
+             breaks=bperc,
+             palette="Blues",
+          labels=c("< 1%", "1% - 10%", "10% - 50%", "50% - 90%", "90% - 99%", "> 99%"))  +
+  tm_borders() +
+  tm_layout(title = mtitle, title.position = c("right","bottom"))
+}
+```  
 
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY",
-          n = 5,
-          style = "kmeans")
-```
-Kmeans data classification method
-
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY",
-          n = 5,
-          style = "fisher")
-```
-fisher classification method
-
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY",
-          n = 5,
-          style = "hclust")
-```
-hclust classification method
-
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY",
-          n = 20,
-          style = "hclust")
-```
-hclust classification method with 20 classes 
+#### 4.2.6 Testing the percentile mapping function
 
 
 ```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY",
-          n = 2,
-          style = "hclust")
-```
+youngmap <- percentmap("YOUNG", mpsz_pop2020a)
+agedmap <- percentmap("AGED", mpsz_pop2020a)
 
+```  
 
-### 3.4 Color Scheme 
-#### 3.4.1 Using Colorbrewer palette
+#### 4.3 Box Map
+
+#### 4.3.1 Creating the boxbreaks function
+
+The following is a function that creating break points for a box map.
+```{r echo=TRUE, eval=TRUE}
+boxbreaks <- function(v,mult=1.5) {
+  qv <- unname(quantile(v))
+  iqr <- qv[4] - qv[2]
+  upfence <- qv[4] + mult * iqr
+  lofence <- qv[2] - mult * iqr
+  # initialize break points vector
+  bb <- vector(mode="numeric",length=7)
+  # logic for lower and upper fences
+  if (lofence < qv[1]) {  # no lower outliers
+    bb[1] <- lofence
+    bb[2] <- floor(qv[1])
+  } else {
+    bb[2] <- lofence
+    bb[1] <- qv[1]
+  }
+  if (upfence > qv[5]) { # no upper outliers
+    bb[7] <- upfence
+    bb[6] <- ceiling(qv[5])
+  } else {
+    bb[6] <- upfence
+    bb[7] <- qv[5]
+  }
+  bb[3:5] <- qv[2:4]
+  return(bb)
+}
+```  
+
+#### 4.3.2 Creating the get.var function
+
+The following is a function that xtract a variable as a vector out of an sf 
+data frame.
+```{r echo=TRUE, eval=TRUE}
+get.var <- function(vname,df) {
+  v <- df[vname] %>% st_set_geometry(NULL)
+  v <- unname(v[,1])
+  return(v)
+}
+```  
+
+#### 4.3.3 Testing the function
+
+Exclude AGED = NA by using the code chunk below.
+```{r echo=TRUE, eval=TRUE}
+mpsz_pop2020a <- mpsz_pop2020 %>%
+  filter(AGED>=0)
+var <- get.var("AGED", mpsz_pop2020a)
+boxbreaks(var)
+```  
+
+#### 4.3.4 Boxmap Function
 
 ```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY",
-          n = 6,
-          style = "quantile",
-          palette = "Blues") +
-  tm_borders(alpha = 0.5)
-```
+boxmap <- function(vnam, df, 
+                   legtitle=NA,
+                   mtitle="Box Map",
+                   mult=1.5){
+  var <- get.var(vnam,df)
+  bb <- boxbreaks(var)
+  tm_shape(mpsz_pop2020) +
+     tm_fill(vnam,title=legtitle,
+             breaks=bb,
+             palette="Blues",
+          labels = c("lower outlier", 
+                     "< 25%", 
+                     "25% - 50%", 
+                     "50% - 75%",
+                     "> 75%", 
+                     "upper outlier"))  +
+  tm_borders() +
+  tm_layout(title = mtitle, 
+            title.position = c("right",
+                               "bottom"))
+}
+```  
+
+#### 4.3.5 Using The Boxmap Function
 
 ```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY",
-          style = "quantile",
-          palette = "-Greens") +
-  tm_borders(alpha = 0.5)
-```
-Reverse shading
+boxmap("ECONOMY ACTIVE", mpsz_pop2020a)
+```  
 
-### 3.5 Map Layouts
-#### 3.5.1 Map Legend
-
+#### 4.4 Raw Rate Map
 
 ```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY", 
-          style = "jenks", 
-          palette = "Blues", 
-          legend.hist = TRUE, 
-          legend.is.portrait = TRUE,
-          legend.hist.z = 0.1) +
-  tm_layout(main.title = "Distribution of Dependency Ratio by planning subzone \n(Jenks classification)",
-            main.title.position = "center",
-            main.title.size = 1,
-            legend.height = 0.45, 
-            legend.width = 0.35,
-            legend.outside = FALSE,
-            legend.position = c("right", "bottom"),
-            frame = FALSE) +
-  tm_borders(alpha = 0.5)
-```
-
-#### 3.5.2 Map Style
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY", 
-          style = "quantile", 
-          palette = "-Greens") +
-  tm_borders(alpha = 0.5) +
-  tmap_style("classic")
-```
-
-#### 3.5.3 Catographic Furniture 
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill("DEPENDENCY", 
-          style = "quantile", 
-          palette = "Blues",
-          title = "No. of persons") +
-  tm_layout(main.title = "Distribution of Dependency Ratio \nby planning subzone",
-            main.title.position = "center",
-            main.title.size = 1.2,
-            legend.height = 0.45, 
-            legend.width = 0.35,
-            frame = TRUE) +
-  tm_borders(alpha = 0.5) +
-  tm_compass(type="8star", size = 2) +
-  tm_scale_bar(width = 0.15) +
-  tm_grid(lwd = 0.1, alpha = 0.2) +
-  tm_credits("Source: Planning Sub-zone boundary from Urban Redevelopment Authorithy (URA)\n and Population data from Department of Statistics DOS", 
-             position = c("left", "bottom"))
-
-```
-
-### 3.6.3 Drawing Small Multiple Choropleth Maps 
-
-#### 3.6.3.1 Assigning Multiple Values To At Least One Aesthetic Arguments
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+
-  tm_fill(c("YOUNG", "AGED"),
-          style = "equal", 
-          palette = "Blues") +
-  tm_layout(legend.position = c("right", "bottom")) +
-  tm_borders(alpha = 0.5) +
-  tmap_style("white")
-
-```
-
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020)+ 
-  tm_polygons(c("DEPENDENCY","AGED"),
-          style = c("equal", "quantile"), 
-          palette = list("Blues","Greens")) +
-  tm_layout(legend.position = c("right", "bottom"))
-
-```
-Assigning multiple values to at least one of the aesthetic arguments
-
-#### 3.6.3.2 Defining a Group-By Variable 
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020) +
-  tm_fill("DEPENDENCY",
-          style = "quantile",
-          palette = "Blues",
-          thres.poly = 0) + 
-  tm_facets(by="REGION_N", 
-            free.coords=TRUE, 
-            drop.shapes=TRUE) +
-  tm_layout(legend.show = FALSE,
-            title.position = c("center", "center"), 
-            title.size = 20) +
-  tm_borders(alpha = 0.5)
-```
-
-#### 3.6.3.2 Creating Multiple Stand-alone maps with Tmap_Arrange()
-```{r echo=TRUE, eval=TRUE}
-youngmap <- tm_shape(mpsz_pop2020)+ 
-  tm_polygons("YOUNG", 
-              style = "quantile", 
-              palette = "Blues")
-
-agedmap <- tm_shape(mpsz_pop2020)+ 
-  tm_polygons("AGED", 
-              style = "quantile", 
-              palette = "Blues")
-
-tmap_arrange(youngmap, agedmap, asp=1, ncol=2)
-```
+mpsz_pop2020a <- mpsz_pop2020a %>%
+  mutate(`AGED%` = (`AGED`
+/`TOTAL`)*100) %>%
+  filter(`AGED%` >= 0)
 
 
-### 3.7 Mappping Spatial Object Meeting a Selection Criterion
-```{r echo=TRUE, eval=TRUE}
-tm_shape(mpsz_pop2020[mpsz_pop2020$REGION_N=="CENTRAL REGION", ])+
-  tm_fill("DEPENDENCY", 
-          style = "quantile", 
-          palette = "Blues", 
-          legend.hist = TRUE, 
-          legend.is.portrait = TRUE,
-          legend.hist.z = 0.1) +
-  tm_layout(legend.outside = TRUE,
-            legend.height = 0.45, 
-            legend.width = 5.0,
-            legend.position = c("right", "bottom"),
-            frame = FALSE) +
-  tm_borders(alpha = 0.5)
-```
+var <- get.var("AGED%", mpsz_pop2020a)
+boxbreaks(var)
+boxmap("AGED",mpsz_pop2020a)
+```  
