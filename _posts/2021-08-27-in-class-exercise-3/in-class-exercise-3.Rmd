@@ -145,12 +145,15 @@ tm_shape(mpsz_pop2020)+
 ```
 
 #### 3.2.3 Drawing Choropleth Map using TM_Fill() and TM_Border()
+
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY")
 ```
 
 Adding border
+
+
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY") +
@@ -215,7 +218,7 @@ tm_shape(mpsz_pop2020)+
           n = 2,
           style = "hclust")
 ```
-hclust classification method with 2 classes 
+
 
 ### 3.4 Color Scheme 
 #### 3.4.1 Using Colorbrewer palette
@@ -295,7 +298,7 @@ tm_shape(mpsz_pop2020)+
 
 ### 3.6.3 Drawing Small Multiple Choropleth Maps 
 
-####3.6.3.1 Assigning Multiple Values To At Least One Aesthetic Arguments
+#### 3.6.3.1 Assigning Multiple Values To At Least One Aesthetic Arguments
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill(c("YOUNG", "AGED"),
@@ -317,7 +320,7 @@ tm_shape(mpsz_pop2020)+
 ```
 Assigning multiple values to at least one of the aesthetic arguments
 
-####3.6.3.2 Defining a Group-By Variable 
+#### 3.6.3.2 Defining a Group-By Variable 
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020) +
   tm_fill("DEPENDENCY",
@@ -333,7 +336,7 @@ tm_shape(mpsz_pop2020) +
   tm_borders(alpha = 0.5)
 ```
 
-####3.6.3.2 Creating Multiple Stand-alone maps with Tmap_Arrange()
+#### 3.6.3.2 Creating Multiple Stand-alone maps with Tmap_Arrange()
 ```{r echo=TRUE, eval=TRUE}
 youngmap <- tm_shape(mpsz_pop2020)+ 
   tm_polygons("YOUNG", 
@@ -349,7 +352,7 @@ tmap_arrange(youngmap, agedmap, asp=1, ncol=2)
 ```
 
 
-###3.7 Mappping Spatial Object Meeting a Selection Criterion
+### 3.7 Mappping Spatial Object Meeting a Selection Criterion
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020[mpsz_pop2020$REGION_N=="CENTRAL REGION", ])+
   tm_fill("DEPENDENCY", 

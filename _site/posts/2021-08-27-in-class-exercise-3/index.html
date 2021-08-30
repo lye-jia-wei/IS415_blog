@@ -2315,7 +2315,7 @@ First 10 features:
 </div>
 <p><img src="in-class-exercise-3_files/figure-html5/unnamed-chunk-11-1.png" width="624" /></p>
 </div>
-Adding border
+<p>Adding border</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>tm_shape</span><span class='op'>(</span><span class='va'>mpsz_pop2020</span><span class='op'>)</span><span class='op'>+</span>
@@ -2404,7 +2404,6 @@ Adding border
 </div>
 <p><img src="in-class-exercise-3_files/figure-html5/unnamed-chunk-19-1.png" width="624" /></p>
 </div>
-<p>hclust classification method with 2 classes</p>
 <h3 id="color-scheme">3.4 Color Scheme</h3>
 <h4 id="using-colorbrewer-palette">3.4.1 Using Colorbrewer palette</h4>
 <div class="layout-chunk" data-layout="l-body">
@@ -2493,7 +2492,7 @@ Adding border
 <p><img src="in-class-exercise-3_files/figure-html5/unnamed-chunk-24-1.png" width="624" /></p>
 </div>
 <h3 id="drawing-small-multiple-choropleth-maps">3.6.3 Drawing Small Multiple Choropleth Maps</h3>
-####3.6.3.1 Assigning Multiple Values To At Least One Aesthetic Arguments
+<h4 id="assigning-multiple-values-to-at-least-one-aesthetic-arguments">3.6.3.1 Assigning Multiple Values To At Least One Aesthetic Arguments</h4>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>tm_shape</span><span class='op'>(</span><span class='va'>mpsz_pop2020</span><span class='op'>)</span><span class='op'>+</span>
@@ -2519,7 +2518,7 @@ Adding border
 <p><img src="in-class-exercise-3_files/figure-html5/unnamed-chunk-26-1.png" width="624" /></p>
 </div>
 <p>Assigning multiple values to at least one of the aesthetic arguments</p>
-####3.6.3.2 Defining a Group-By Variable
+<h4 id="defining-a-group-by-variable">3.6.3.2 Defining a Group-By Variable</h4>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>tm_shape</span><span class='op'>(</span><span class='va'>mpsz_pop2020</span><span class='op'>)</span> <span class='op'>+</span>
@@ -2538,7 +2537,7 @@ Adding border
 </div>
 <p><img src="in-class-exercise-3_files/figure-html5/unnamed-chunk-27-1.png" width="624" /></p>
 </div>
-####3.6.3.2 Creating Multiple Stand-alone maps with Tmap_Arrange()
+<h4 id="creating-multiple-stand-alone-maps-with-tmap_arrange">3.6.3.2 Creating Multiple Stand-alone maps with Tmap_Arrange()</h4>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>youngmap</span> <span class='op'>&lt;-</span> <span class='fu'>tm_shape</span><span class='op'>(</span><span class='va'>mpsz_pop2020</span><span class='op'>)</span><span class='op'>+</span> 
@@ -2556,7 +2555,7 @@ Adding border
 </div>
 <p><img src="in-class-exercise-3_files/figure-html5/unnamed-chunk-28-1.png" width="624" /></p>
 </div>
-###3.7 Mappping Spatial Object Meeting a Selection Criterion
+<h3 id="mappping-spatial-object-meeting-a-selection-criterion">3.7 Mappping Spatial Object Meeting a Selection Criterion</h3>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>tm_shape</span><span class='op'>(</span><span class='va'>mpsz_pop2020</span><span class='op'>[</span><span class='va'>mpsz_pop2020</span><span class='op'>$</span><span class='va'>REGION_N</span><span class='op'>==</span><span class='st'>"CENTRAL REGION"</span>, <span class='op'>]</span><span class='op'>)</span><span class='op'>+</span>
