@@ -23,7 +23,7 @@ This code chunk performs three task:
 - create a list of R packages needed.
 
 ```{r echo=TRUE, eval=TRUE}
-packages <- c('sf','tidyverse')
+packages <- c('sf','tidyverse','ggplot')
 for(p in packages){
   if(!require(p, character.only = T)){
     install.packages(p)
@@ -188,9 +188,8 @@ Histogram to reveal the distribution of PreSch Density
 
 ```{r echo=TRUE, eval=TRUE}
 ggplot(data=mpsz3414, aes(x= as.numeric(`PreSch Density`), y=`PreSch Count`)) +
-  geom_point()+
+  geom_point(color='black',fill="light blue")+ xlim(0,40) +ylim(0,40)
 labs(title = "Relationship between Pre-school Density and Pre-school Count.",
-       subtitle= "change later",
       x = "Pre-school density (per km sq)",
       y = "Pre-school Count")
 
