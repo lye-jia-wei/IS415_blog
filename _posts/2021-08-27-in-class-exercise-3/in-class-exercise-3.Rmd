@@ -136,6 +136,7 @@ mpsz_pop2020 <- left_join(mpsz, popdata2020,
 #### 4.1 Boxplot
 
 Visualisation technique to show the statistics and distribution of data values
+
 ```{r echo=TRUE, eval=TRUE}
 mpsz_pop2020 <- left_join(mpsz, popdata2020,
                           by = c("SUBZONE_N" = "SZ"))
@@ -160,6 +161,7 @@ quantile(var[,1], percent)
 
 The code chunk is an R function to extract a variable as a vector out of an sf 
 data frame.
+
 ```{r echo=TRUE, eval=TRUE}
 get.var <- function(vname,df) {
   v <- df[vname] %>% 
@@ -230,6 +232,7 @@ agedmap <- percentmap("AGED", mpsz_pop2020a)
 #### 4.3.1 Creating the boxbreaks function
 
 The following is a function that creating break points for a box map.
+
 ```{r echo=TRUE, eval=TRUE}
 boxbreaks <- function(v,mult=1.5) {
   qv <- unname(quantile(v))
@@ -262,6 +265,7 @@ boxbreaks <- function(v,mult=1.5) {
 
 The following is a function that xtract a variable as a vector out of an sf 
 data frame.
+
 ```{r echo=TRUE, eval=TRUE}
 get.var <- function(vname,df) {
   v <- df[vname] %>% st_set_geometry(NULL)
@@ -273,6 +277,7 @@ get.var <- function(vname,df) {
 #### 4.3.3 Testing the function
 
 Exclude AGED = NA by using the code chunk below.
+
 ```{r echo=TRUE, eval=TRUE}
 mpsz_pop2020a <- mpsz_pop2020 %>%
   filter(AGED>=0)
