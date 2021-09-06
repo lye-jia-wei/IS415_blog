@@ -1,7 +1,7 @@
 ---
 title: "In-class Exercise 4"
 description: |
-  A short description of the post.
+  In this exercise, the focus will be on Onemap SG API and usign spatstat
 author:
   - name: Lye Jia Wei
     url: https://lye-jia-wei.github.io/
@@ -118,6 +118,23 @@ sg <- as_Spatial(sg_sf)
 ```{r echo=TRUE, eval=TRUE}
 childcare_sp <- as(childcare, "SpatialPoints")
 CHAS_sp <- as(CHAS, "SpatialPoints")
-sg_sp <- as(mpsz, "SpatialPolygons")
+sg_sp <- as(sg, "SpatialPolygons")
 ```
 
+### 3.3 Converting from sp to spatstat ppp format
+
+```{r echo=TRUE, eval=TRUE}
+childcare_ppp <- as(childcare_sp, "ppp")
+CHAS_ppp<- as(CHAS_sp, "ppp")
+```
+
+
+### 3.4 Interative Map
+
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+tm_shape(childcare_sf) + 
+  tm_dots(alpha=0.4, col= "blue", size=0.05) +
+  tm_shape(CHAS_sf) +
+  tm_dots(alpha=0.4, col="red", size=0.05)
+```
