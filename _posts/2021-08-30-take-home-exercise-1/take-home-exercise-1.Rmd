@@ -1107,41 +1107,6 @@ plot(wm_queen, coordinates(Jakarta_Covid_Cases_sp), pch = 19, cex = 0.6, add = T
 ```
 
 
-### Distance-based weight matrices
-```{r echo=TRUE, eval=TRUE}
-coords <- coordinates(Jakarta_Covid_Cases_sp)
-```
-
-### 8.2.2.1 Fixed distance
-```{r echo=TRUE, eval=TRUE}
-k1 <- knn2nb(knearneigh(coords))
-k1dists <- unlist(nbdists(k1, coords))
-
-
-
-wm_fixedd <- dnearneigh(coords, 0, 20497)
-summary(wm_fixedd)
-
-
-plot(Jakarta_Covid_Cases_sp, border="lightgrey")
-plot(wm_fixedd, coords, pch = 19, cex = 0.6, add = TRUE, col= "red")
-```
-
-```{r echo=TRUE, eval=TRUE}
-```
-
-#11.1.8 Local Moran’s I
-
-#11.1.8.1 Compute Local Moran’s I
-```{r echo=TRUE, eval=TRUE}
-localmoran_13 <- localmoran(Jakarta_Covid_Cases['Covid Cases Per 10k Population'], rswm_knn9)
-localmoran_32 <- localmoran(cmexico_covid_sp$cumul32_rate, rswm_knn9)
-
-cmexico_localmoran13 <- cbind(cmexico_covid_sp, localmoran_13)
-cmexico_localmoran32 <- cbind(cmexico_covid_sp, localmoran_32)
-```
-
-
 
 #10.1.9 Relative Risk Map
 
@@ -1253,4 +1218,3 @@ Death_Rate_Final <- st_as_sf(Death_Rate_Final)
 
 
 ```
-
