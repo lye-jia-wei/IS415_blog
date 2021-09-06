@@ -1,0 +1,102 @@
+---
+title: "In-class Exercise 4"
+description: |
+  A short description of the post.
+author:
+  - name: Lye Jia Wei
+    url: https://lye-jia-wei.github.io/
+date: 09-06-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## 1. Onemap SG API
+
+### 1.1 Getting Started 
+
+Installing and importing Onemap SG API.
+
+```{r echo=TRUE, eval=TRUE}
+packages <- c('onemapsgapi')
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+### 1.2 Query 
+
+```{r}
+#get_theme("TOKEN", "hotels")
+```
+
+Note: Need to put double quote for token and query name 
+
+
+## 2. In Class Exercise 4
+
+### 2.1 Getting Started 
+
+In this in-class exercise, we will be using the following library:
+
+- SF: Import geospatial data
+- Tidyverse: To read rds and to do data manipulation
+- Tmap: Prepare map 
+- Spatstat: Perform spatial point pattern analysis
+- Maptools: Convert spatial data from Spatial Object Class to Spatstat format 
+- Raster: Handle raster data
+
+
+```{r echo=TRUE, eval=TRUE}
+packages <- c('maptools','sf','raster','spatstat','tmap','tidyverse')
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+### 2.1 Getting Started 
+```{r echo=TRUE, eval=TRUE}
+sg_sf <- st_read(dsn="data/shapefile", layer="CostalOutline")
+
+mpsz_sf <- st_read(dsn="data/shapefile",layer="MP14_SUBZONE_WEB_PL")
+```
+
+
+### 2.2 Importing Geospatial Data
+```{r echo=TRUE, eval=TRUE}
+sg_sf <- st_read(dsn="data/shapefile", layer="CostalOutline")
+
+mpsz_sf <- st_read(dsn="data/shapefile",layer="MP14_SUBZONE_WEB_PL")
+```
+
+### 2.3 Importing Aspatial Data
+
+```{r echo=TRUE, eval=TRUE}
+childcare <- read_rds("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-09-06-in-class-exercise-4/data/rds/childcare.rds")
+CHAS <- read_rds("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-09-06-in-class-exercise-4/data/rds/CHAS.rds")
+```
+
+### 2.4 Converting from aspatial to geospatial
+
+```{r echo=TRUE, eval=TRUE}
+CHAS_sf <- st_as_sf(CHAS, coords = c("X_COORDINATE","Y_COORDINATE"), crs=3414)
+
+```
+
+```{r echo=TRUE, eval=TRUE}
+childcare$Lat <- as.numeric(childcare$Lat)
+childcare$Lng <- as.numeric(childcare$Lng)
+childcare_sf <- st_as_sf(childcare, coords= c("Lng","Lat"),crs=4326) %>% st_transform(crs=3414)
+```
