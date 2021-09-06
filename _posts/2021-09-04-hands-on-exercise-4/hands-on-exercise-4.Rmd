@@ -1,7 +1,7 @@
 ---
 title: "Hands-on Exercise 4"
 description: |
-  A short description of the post.
+  In this exercise, we will use spatstat package to perform spatial point patterns analys
 author:
   - name: Lye Jia Wei
     url: https://lye-jia-wei.github.io/
