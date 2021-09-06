@@ -100,3 +100,24 @@ childcare$Lat <- as.numeric(childcare$Lat)
 childcare$Lng <- as.numeric(childcare$Lng)
 childcare_sf <- st_as_sf(childcare, coords= c("Lng","Lat"),crs=4326) %>% st_transform(crs=3414)
 ```
+
+
+## 3.0 Geospatial Data Wrangling
+
+### 3.1 Converting from sf to Spatial classes
+
+```{r echo=TRUE, eval=TRUE}
+childcare <- as_Spatial(childcare_sf)
+CHAS <- as_Spatial(CHAS_sf)
+mpsz <- as_Spatial(mpsz_sf)
+sg <- as_Spatial(sg_sf)
+```
+
+### 3.2 Converting from Spatial classes to SP format
+
+```{r echo=TRUE, eval=TRUE}
+childcare_sp <- as(childcare, "SpatialPoints")
+CHAS_sp <- as(CHAS, "SpatialPoints")
+sg_sp <- as(mpsz, "SpatialPolygons")
+```
+
