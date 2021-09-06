@@ -1,0 +1,1256 @@
+---
+title: "Take-home Exercise 1"
+description: |
+  A short description of the post.
+author:
+  - name: Lye Jia Wei
+    url: https://lye-jia-wei.github.io/
+date: 08-30-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## 1. Introduction
+
+Since late December 2019, an outbreak of a novel coronavirus disease (COVID-19; 
+previously known as 2019-nCoV) was reported in Wuhan, China, which had 
+subsequently affected 210 countries worldwide. In general, COVID-19 is an acute 
+resolved disease but it can also be deadly, with a 2% case fatality rate.
+
+The COVID-19 pandemic in Indonesia is part of the ongoing worldwide pandemic of 
+coronavirus disease 2019 (COVID-19) caused by severe acute respiratory syndrome 
+coronavirus 2 (SARS-CoV-2). The virus was confirmed to have reached Indonesia 
+on March 2, 2020. It started with two cases in March. As of July 31 2021, there 
+had been 3,409,658 cumulative confirmed cases of COVID-19 in Indonesia and 
+94,119 reported cumulative deaths. All cases were spread in 34 provinces in 
+Indonesia. Among all the provinces, DKI Jakarta (Indonesian: Daerah Khusus 
+Ibukota Jakarta and in English: Special Capital Region of Jakarta) contributed 
+close to 24% of the cumulative confirmed cases.
+
+
+
+## 2. Problem Statement 
+
+Given that the cumulative confirmed cases were not evenly distributed within DKI Jakarta, this geospatial analysis aim to
+
+- Reveal the spatial-temporal patterns of COVID-19 case in DKI Jakarta 
+- Find out sub-districts with relatively higher number of confirmed cases
+- Identify trends of COVID-19 case in the sub-districts and how they change over time.
+
+## 3. Data
+
+In this analysis, the following dataset were used:
+
+```{r, layout="l-body",table.with=2}
+
+Data <- c("Jakarta COVID-19 Data", "DKI Jarkata shapefile")
+Format <- c("XLSX", "Shapefile")
+Description <- c("Daily COVID-19 data of DKI Jakarta month between March 2020 to July 2021", "Jakarta sub-district")
+Source <- c("[Open Data Covid-19 Provinsi DKI](https://riwayat-file-covid-19-dki-jakarta-jakartagis.hub.arcgis.com/)",
+"[Indonesia Geospatial Data](https://www.indonesia-geospasial.com/p/sitemap.html)")
+
+
+data_set <- data.frame(Data,Description,Format, Source)
+library(knitr)
+kable(head(data_set))
+```
+## 4. Getting Started
+In this exercise, the key R package use is tmap package in R. Beside
+tmap package, three other R packages will be used. They are:
+
+- ReadXL for importing XLSX file,
+- tidyr for tidying data,
+- sf for handling geospatial data,
+- plotly for data visualization
+- dplyr for data maniupulation
+- plyr for splitting, applying and combining Data 
+- tmap to produce thematic map
+- spdep to create spatial weights matrix objects 
+
+```{r echo=TRUE, eval=TRUE}
+packages <- c('sf','tidyverse','readxl','plotly','dplyr','plyr','tmap','spdep')
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+## 5.Data Import
+
+### 5.1 Importing Geospatial Data Into R
+
+Import the data and examine the content of the data set.
+
+-Data will first be imported as an sf object to facilitate data pre-processing 
+and initial analysis, then converted to sp class in the later part of the 
+analysis.
+
+```{r echo=TRUE, eval=TRUE} 
+
+DKI_Jakarta = st_read(dsn="data/geospatial",layer="BATAS_DESA_DESEMBER_2019_DUKCAPIL_DKI_JAKARTA")
+```
+
+The message above reveals that the geospatial objects are multipolygon features. 
+There are a total of 269 multipolygon features and 161 fields in DKI simple 
+feature data frame. DKI is in WGS84 projected coordinates systems. 
+
+
+###5.2 Importing Attribute Data Into R
+
+Next, we will import monthly Covid-19 data XLSX file from a folder into RStudio 
+and save it into an R dataframe called Temp_Covid_DF.
+
+#### 5.2.1 Reading XLSX File
+
+The task will be performed by using read_xlsx() function as shown in the code 
+chunk below. We will also be adding another 'Date' field for extraction later.
+
+```{r echo=TRUE, eval=TRUE} 
+File_List <- list.files(path = "C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/data/aspatial" , pattern = "*.xlsx",  full.names = T)
+DF_List <- lapply(seq_along(File_List), function(x) transform(read_xlsx(File_List[x]), Date = File_List[x]))
+```
+
+#### 5.2.2 Creating Dataframe
+
+We will then convert the DF_List into dataframe using the ldpy function. This will
+be a temporary dataframe which we will carry out data cleaning in the later step.
+
+```{r echo=TRUE, eval=TRUE} 
+Covid_DF <- ldply(DF_List, data.frame)
+```
+
+
+## 6.Data Extraction, Wrangling and Integration
+
+### 6.1 Geospatial Data
+
+#### 6.1.1 Data Cleaning 
+
+Ensure that spatial data to be used for analysis has no invalid geometries.
+
+```{r echo=TRUE, eval=TRUE}
+length(which(st_is_valid(DKI_Jakarta) == FALSE))
+
+```
+- There are no invalid geometries in the data that needs to be handled.
+
+Check the data for missing values, as missing values can impact future 
+calculations.
+
+```{r echo=TRUE, eval=TRUE}
+DKI_Jakarta[rowSums(is.na(DKI_Jakarta))!=0,]
+```
+
+#### 6.1.2 Plotting the Geospatial Data
+
+```{r echo=TRUE, eval=TRUE} 
+plot(DKI_Jakarta)
+```
+From the map, it is evident that the dataframe consists of outer islands. 
+
+
+#### 6.1.3 Removing Outer Islands
+
+```{r echo=TRUE, eval=TRUE}
+#DKI_Jakarta_Temp <- filter(DKI_Jakarta_Temp, OBJECT_ID > 25383)
+
+DKI_Jakarta <- subset(DKI_Jakarta, KAB_KOTA != "KEPULAUAN SERIBU")
+
+
+```
+
+Through exploratory data analysis, it is evident that the mainland is all the 
+features where 'KAB_KOTA' is not 'KEPULAUAN SERIBU.
+
+#### 6.1.4 Retain the first nine fields in the DKI Jakarta sf data frame
+```{r echo=TRUE, eval=TRUE}
+#Positions <- c(1:9)
+#DKI_Jakarta <- DKI_Jakarta_Temp %>% select(Positions)
+DKI_Jakarta <- DKI_Jakarta[, 0:9]
+```
+
+
+
+#### 6.1.5 Define Projection
+
+-The spatial data of Jakarta (Indonesia) is utilised in this analysis.
+-Initial data exploration reveals that data is to be projected using the 
+LCC projection, with the World Geodetic System 1984 datum.
+The corresponding EPSG code is EPSG:23845.
+The CRS of the data will be checked, then assigned accordingly.
+Unit of measurement will be in metres.
+
+```{r echo=TRUE, eval=TRUE}
+st_crs(DKI_Jakarta)
+```
+#### 6.1.6 Assigning a coordinate system 
+
+Although DKI_Jakarta data frame is projected in WGS84 but when we read until 
+the end of the print, it indicates that the EPSG is 4326. This is a wrong EPSG 
+code because the correct EPSG code should be 23845.
+
+In order to assign the correct EPSG code to DKI_Jakarta data frame as well
+as to set the projection coordinate system to DGN95, st_transform is used as shown in 
+the code chunk below.
+
+```{r echo=TRUE, eval=TRUE}
+DKI_Jakarta <- st_transform(DKI_Jakarta, 23845)
+
+```
+
+Check the CSR again by using the code chunk below.
+
+```{r echo=TRUE, eval=TRUE}
+
+st_crs(DKI_Jakarta)
+```
+#### 6.1.7 NA, Geometric Validity Checks and Correction
+
+To check if there are any NA values as a result of data manipulation.
+
+```{r echo=TRUE, eval=TRUE}
+DKI_Jakarta[rowSums(is.na(DKI_Jakarta))!=0,]
+```
+There are 2 NA values detected. A quick look indicates that it has no
+sub_district, district and population information. Hence, we will proceed to drop
+the rows.
+
+```{r echo=TRUE, eval=TRUE}
+DKI_Jakarta <- na.omit(DKI_Jakarta,c("DESA_KELUR"))
+
+```
+
+
+
+
+Additionally we will also conduct a geometry check to ensure that the data is 
+not corrupted or invalid when imported into R. The following code chunk does this check
+
+
+```{r echo=TRUE, eval=TRUE}
+Test <- st_is_valid(DKI_Jakarta,reason=TRUE)
+length(which(Test!= "Valid Geometry"))
+```
+There are no invalid geometries. 
+
+
+### 6.2 Aspatial Data
+
+
+#### 6.2.1 Understanding Temp_Covid_DF
+
+To better understand the data structure of Temp_Covid_DF, we will inspect it
+quickly. 
+
+```{r echo=TRUE, eval=TRUE}
+head(Covid_DF)
+```
+While combining the different XLSX file into the dataframe, it resulted in 
+duplicated columns. Hence, the next step is to remove these duplicated columns
+as well as other irrelevant columns. 
+
+
+#### 6.2.2 Coalesce 'ID_KEL' & 'Meninngal' column
+
+A quick glance at dataframe suggest that there are duplicated  'ID_KEL' column.
+Hence, coalesce needs to be done to ensure that all the ID are present one single
+ID column. 
+
+```{r echo=TRUE, eval=TRUE}
+
+Covid_DF <- Covid_DF %>% 
+  mutate(ID_KEL = coalesce(ID_KEL, ID_KEL...1, ID_KEL...2))
+
+
+#Temp_Covid_DF <- Temp_Covid_DF %>% mutate(ID = coalesce(ID_KEL...1, ID_KEL))
+#Temp_Covid_DFf$Meninggal...26 = as.double($Meninggal...26)
+
+#Temp_Covid_DF <- Temp_Covid_DF %>% mutate(Meninggal = coalesce(Meninggal, Meninggal...28, Meninggal...29, Meninggal...30, Meninggal...31, Meninggal...26))
+
+
+
+```
+
+
+We will then repeat this step for the 'Meninngal' column. Before we 
+coalesce the various Meninggal column, we will have to change the data 
+type of the column.
+
+```{r echo=TRUE, eval=TRUE}
+
+
+
+
+Covid_DF$Meninggal...26 = as.double(Covid_DF$Meninggal...26)
+
+
+Covid_DF <- Covid_DF %>% 
+  mutate(Meninggal = coalesce(Meninggal, Meninggal...28, Meninggal...29, Meninggal...30, Meninggal...31, Meninggal...26))
+
+```
+
+#### 6.2.3 Extract Column of Interest
+
+While there are many columns in Temp_Covid_DF, the relevant columns for analysis
+are: 
+
+- Name_provinsi (Province)
+- name_kota (City)
+- nama_kecamatan (District)
+- nama_kelurahan (Sub-district)
+- Meninggal (Deaths)
+- POSITIF (Covid Cases)
+- month
+- ID
+
+```{r echo=TRUE, eval=TRUE}
+
+Covid_DF <- Covid_DF %>% select("Date","ID_KEL", 
+                                          "Nama_provinsi", "nama_kota", 
+                                          "nama_kecamatan", "nama_kelurahan", 
+                                          "POSITIF", "Meninggal")
+
+```
+
+#### 6.2.4 Adding in 'Date' Column 
+
+Since the focus of this analysis will require the time period of the cases,
+we will add a 'Date' column. 
+
+A quick look at the XLSX file suggest that:
+
+XLSX File Name: Standar Kelurahan Data Corona (28 Februari 2021 Pukul 10.00).xlsx
+
+The date is formatted as DD-Month-YYY in bracket right before ( and the word 'Pukul'.
+Hence, we will use regular expressions to extract the date.
+
+```{r echo=TRUE, eval=TRUE}
+
+Covid_DF$Date <- str_extract(Covid_DF$Date,"(?<=Data Corona \\().*(?= Pukul)")
+
+```
+
+
+By looking through Temp_Covid_DF, we can see that the month is spelled in 
+Bahasa Indonesia which is the national adminstrative language of Indonesia.
+With that, we have to set locale to Indonesia and format the date. 
+
+```{r echo=TRUE, eval=TRUE}
+
+Sys.setlocale(locale="ind")
+Covid_DF$Date  <- c(Covid_DF$Date ) %>% as.Date(Covid_DF$Date , format ="%d %B %Y")
+#Temp_Covid_DF$Date  <- Temp_Covid_DF$Date [order(Temp_Covid_DF$Date$Date),]
+```
+#### 6.2.5 Renaming Column 
+
+Translating column name to English for ease of comprehension 
+Changing column name for Temp_Covid_DF
+
+```{r echo=TRUE, eval=TRUE}
+
+Covid_DF <- Covid_DF %>% 
+  dplyr::rename(
+    Death=Meninggal, Cases=POSITIF, Sub_District=nama_kelurahan, 
+    District=nama_kecamatan, City=nama_kota, Province=Nama_provinsi, ID=ID_KEL
+  )
+```
+
+Changing column name for DKI_Jakarta
+
+```{r echo=TRUE, eval=TRUE}
+
+DKI_Jakarta <- DKI_Jakarta %>% 
+  dplyr::rename(
+    Total_Population=JUMLAH_PEN, Sub_District=DESA_KELUR, District=KECAMATAN, 
+    City=KAB_KOTA, Province=PROVINSI, Village=DESA, ID=KODE,
+    Village_Code=KODE_DESA, Object_ID=OBJECT_ID
+    )
+
+```
+
+#### 6.2.5 Dropping Columns 
+
+Dropping 'ID' column with 'NA' and ID column with data other than ID
+
+```{r echo=TRUE, eval=TRUE}
+Covid_DF <-Covid_DF[!is.na(Covid_DF$ID),]
+
+#Covid_DF  <- Temp_Covid_DF [rowSums(is.na(Temp_Covid_DF [,1]))!=1,]
+Covid_DF <-Covid_DF [!(Covid_DF$ID=="BELUM DIKETAHUI" | Covid_DF$ID=="PROSES UPDATE DATA" | Covid_DF$ID=="LUAR DKI JAKARTA") ,]
+
+```
+
+
+#### 6.2.5 Changing Data Type of Column 
+```{r echo=TRUE, eval=TRUE}
+
+#Changing Cases data type from character to numeric
+
+Covid_DF$Cases <- as.numeric(Covid_DF$Cases)
+
+
+
+
+Covid_DF$Death[is.na(Covid_DF$Death)] = 0
+
+Covid_DF$Death <- as.numeric(Covid_DF$Death)
+
+
+
+DKI_Jakarta$Total_Population <- as.numeric(DKI_Jakarta$Total_Population)
+
+
+```
+
+
+
+
+
+## 8. Study Area 
+
+To better understand the study area and Jakarta_Covid dataframe, tmap is used to plot
+choropleth map to quickly visualize spatial relation of Covid-19 cases and 
+deaths in Jakarta respectively.
+
+## 8.1 Joining the Attribute Data & Spatial Data
+```{r echo=TRUE, eval=TRUE}
+
+Jakarta_Covid <- left_join(DKI_Jakarta, Covid_DF,
+                          by = c("Province" = "Province","Sub_District" = "Sub_District",'City'='City'))
+
+```
+
+
+
+### 8.2 Preliminary Choropleth Map of Covid-19 Cases in Jakarta 
+
+```{r echo=TRUE, eval=TRUE}
+
+tmap_mode("plot")
+tm_shape(Jakarta_Covid)+
+  tm_fill("Cases",minimize = TRUE) +
+  tm_borders(alpha = 0.5) 
+
+```
+
+
+### 8.3 Preliminnary Choropleth Map of Covid-19 Death in Jakarta 
+
+```{r echo=TRUE, eval=TRUE}
+
+tmap_mode("plot")
+tm_shape(Jakarta_Covid)+
+  tm_fill("Death",minimize = TRUE) +
+  tm_borders(alpha = 0.5) 
+
+```
+From the two maps, it is evident that there are missing geospatial data. Hence, 
+in the following segment, data cleaning and inspection needs to be executed. 
+
+
+## 9. Data Inspection & Data Cleaning Round 2 
+
+```{r echo=FALSE, eval=FALSE}
+
+View(Jakarta_Covid)
+View(DKI_Jakarta)
+View(Covid_DF)
+```
+
+After inspecting the Jakarta_Covid dataframe, it appears that there are spelling
+error for data in the 'Sub-District' column e.g 'KRAMAJATI' vs 'KRAMAT JATI' 
+which resulted in missing data when joining the attribute & spatial data.
+
+
+### 9.1 Identifying Missing Sub-District
+
+The following code chunk will identify the missing 'sub-district' values.
+
+```{r echo=TRUE, eval=TRUE}
+Covid_SD <-c(Covid_DF$Sub_District)
+Jakarata_SD <-c(DKI_Jakarta$Sub_District)
+
+
+Covid_SD[!(Covid_SD %in% Jakarata_SD)]
+
+```
+From the output, it is evident that the following sub-districts are spelled 
+incorrectly:
+
+- KRAMATJATI (Correct: 'KRAMAT JATI')
+- PAL MERAH (Correct 'PALMERAH')
+- PALMERIAM (Correct: 'PAL MERIAM')
+- KALIBARU (Correct: 'KALI BARU')
+- RAWAJATI (Correct: 'RAWA JATI')
+- JATIPULO (Correct: 'JATI PULO')
+- KRENDANG (Correct: 'KERENDANG')
+- PINANGRANTI (Correct: 'PINANG RANTI')
+- BALEKAMBANG (Correct: 'BALE KAMBANG')
+
+Apart from spelling mistakes,there were also sub-districts value that have
+have missing word
+
+- TENGAH (Correct: 'KAMPUNG TENGAH')
+
+
+### 9.2 Clean Sub-District Data
+
+The following code chunk corrects the misspelt sub-district in preparation for
+joining the attribute data & spatial data in the next step.
+
+```{r echo=TRUE, eval=TRUE}
+DKI_Jakarta <- DKI_Jakarta %>% mutate(Sub_District = ifelse(as.character(Sub_District) == "KRAMATJATI", "KRAMAT JATI", as.character(Sub_District)))
+DKI_Jakarta <- DKI_Jakarta %>% mutate(District = ifelse(as.character(District) == "PAL MERAH", "PALMERAH", as.character(District)))
+DKI_Jakarta <- DKI_Jakarta %>% mutate(Sub_District = ifelse(as.character(Sub_District) == "PALMERIAM", "PAL MERIAM", as.character(Sub_District)))
+DKI_Jakarta <- DKI_Jakarta %>% mutate(Sub_District = ifelse(as.character(Sub_District) == "KALIBARU", "KALI BARU", as.character(Sub_District)))
+DKI_Jakarta <- DKI_Jakarta %>% mutate(Sub_District = ifelse(as.character(Sub_District) == "RAWAJATI", "RAWA JATI", as.character(Sub_District)))
+DKI_Jakarta <- DKI_Jakarta %>% mutate(Sub_District = ifelse(as.character(Sub_District) == "TENGAH", "KAMPUNG TENGAH", as.character(Sub_District)))
+DKI_Jakarta <- DKI_Jakarta %>% mutate(Sub_District = ifelse(as.character(Sub_District) == "JATIPULO", "JATI PULO", as.character(Sub_District)))
+DKI_Jakarta <- DKI_Jakarta %>% mutate(Sub_District = ifelse(as.character(Sub_District) == "KRENDANG", "KERENDANG", as.character(Sub_District)))
+DKI_Jakarta <- DKI_Jakarta %>% mutate(Sub_District = ifelse(as.character(Sub_District) == "PINANGRANTI", "PINANG RANTI", as.character(Sub_District)))
+DKI_Jakarta <- DKI_Jakarta %>% mutate(Sub_District = ifelse(as.character(Sub_District) == "BALEKAMBANG", "BALE KAMBANG", as.character(Sub_District)))
+DKI_Jakarta <- DKI_Jakarta %>% mutate(Sub_District = ifelse(as.character(Sub_District) == "HALIM PERDANA KUSUMA", "HALIM PERDANA KUSUMAH", as.character(Sub_District)))
+DKI_Jakarta <- DKI_Jakarta %>% mutate(Sub_District = ifelse(as.character(Sub_District) == "PULOGADUNG", "PULO GADUNG", as.character(Sub_District)))
+Covid_DF<- Covid_DF %>% mutate(District = ifelse(as.character(District) == "KALI DERES", "KALIDERES", as.character(District)))
+Covid_DF<- Covid_DF %>% mutate(District = ifelse(as.character(District) == "KALI DERES", "KALIDERES", as.character(District)))  
+#LOOK INTOT HIS
+
+#UntungJAWA
+
+```
+
+
+### 9.3 Joining the Attribute Data & Spatial Data
+
+```{r echo=TRUE, eval=TRUE}
+
+Jakarta_Covid <- left_join(DKI_Jakarta, Covid_DF,
+                          by = c("Sub_District" = "Sub_District"))
+
+```
+
+
+### 9.4 Checking Sub-District Data
+
+Plotting the cases against the map of Jakarta to verify that all the misspelled
+sub-district and district are corrected.
+
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("plot")
+tm_shape(Jakarta_Covid)+
+  tm_fill("Cases") +
+  tm_borders(alpha = 0.5) 
+```
+
+From the output, we can see that all the data are now corrected. 
+
+
+
+
+## 10. Exploratory Data Analysis
+
+```{r echo=TRUE, eval=TRUE}
+
+summary(Covid_DF)
+
+```
+Based on summary statistics, there is ..... 
+
+
+          
+
+CHANGE THIS PART NUMBERING 
+
+
+### 11. Choropleth Mapping (Actual)
+
+
+
+#### 11.1 Cumulative Confirmed Cases 
+
+#### 10.1.1 Data preparation
+The following code chunk will omit rows with missing month values and join
+the attribute data (Covid_DF) & spatial data (DKI_Jakarta). 
+
+Following which, the cumulative confirmed cases per 10,0000 population will be
+calculated using the following formula:
+
+$$ Monthly\ Cumulative\ Confirmed\ Cases\  = 
+\frac{Total\ no\ of\ Covid-19\ cases\ at\ Sub-District\ 
+Level}{Total\ Population\ of\ the\ Sub-District} \ *\ 10,000$$
+
+Before that, we will need to inner join Covid_DF and DKI_Jakarta dataframe
+by "Sub_District" and then convert it into sf.  
+
+```{r echo=TRUE, eval=TRUE}
+
+Jakarta_Covid_Cases <- Covid_DF %>%
+  inner_join(DKI_Jakarta, by=c("Sub_District"="Sub_District")) %>%
+  group_by(Sub_District, Date) %>%
+  dplyr::summarise(`Covid Cases Per 10k Population` = ((sum(Cases) / (Total_Population ))*10000)) %>% ungroup()
+
+Jakarta_Covid_Cases <- Jakarta_Covid_Cases%>% left_join(DKI_Jakarta, 
+                       by=c("Sub_District"="Sub_District"))
+
+Jakarta_Covid_Cases<- st_as_sf(Jakarta_Covid_Cases)
+
+```
+
+
+#### 10.1.2 Plotting Choropleth Map of Monthly Cumulative Confirmed Cases 
+
+In the code chunk below, tm_shape() is used to define the input data 
+(Jakarta_Covid_Cases) and tm_fill() is used to illustrate the monthly cumulative
+confirmed cases at sub-district level. 
+
+The choropleth map is plotted via a function called Monthly_Cases_Map 
+with quantile data classification methods.  
+
+```{r echo=TRUE, eval=TRUE}
+
+Monthly_Cases_Map <- function(date) {
+  Jakarta_Covid_Cases <- Jakarta_Covid_Cases %>% filter(Date == Date)
+  Month_Data <-paste("Cumulative Confirmed Cases per 10,000 population \n by Jakarta Sub-District as at", as.character(date), sep=" ")
+  tmap_mode("plot")+
+  tm_shape(Jakarta_Covid_Cases)+
+  tm_fill("Covid Cases Per 10k Population",n = 5, style="jenks",
+          legend.is.portrait = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = Month_Data ,
+            main.title.position = "center",
+            main.title.size = 0.75,title.size = 0.30,
+            legend.height = 0.20, 
+            legend.width = 0.35, 
+            legend.outside = FALSE,
+            legend.position = c("left", "bottom"),
+            frame = TRUE)+
+  tm_compass(type="4star", size = 2) + 
+  tm_scale_bar(width = 0.15)+
+  tm_grid(lwd = 0.1, alpha = 0.2) 
+}
+
+```
+
+
+The function is then called to plot the cumulative Confirmed cases for March 2021.
+
+```{r echo=TRUE, eval=TRUE}
+
+Monthly_Cases_Map('2021-03-31')
+
+```
+
+#### 10.1.3 Plotting Choropleth Map Between March 2020 - July 2021
+
+
+By using group by date in TM_FACETS, we can see the spatial-temporal patterns 
+of COVID-19 case in DKI Jakarta between March 2020 to July 2021.
+
+```{r fig.width=16, fig.height=25}
+
+tm_shape(Jakarta_Covid_Cases) +
+  tm_fill("Covid Cases Per 10k Population",
+          style = "quantile",
+          thres.poly = 0,palette = "Blues") + 
+  tm_facets(by="Date", 
+            free.coords=TRUE, 
+            drop.shapes=TRUE) +
+  tm_layout(legend.show = TRUE,
+            title.position = c("center", "center"), 
+            title.size = 10,main.title = "Cumulative Confirmed Cases per 10k population In Jakarta Sub-District", legend.outside = FALSE,legend.width = 0.70, legend.text.size = 1.5, legend.position = c("left", "bottom"), panel.label.size = 2.0) +
+  tm_compass(type="4star", size = 2) + 
+  tm_scale_bar(width = 0.15)+
+  tm_grid(lwd = 0.1, alpha = 0.2) +
+  tm_borders(alpha = 0.5)
+
+
+```
+
+
+#### 10.1.2 Cumulative Covid-19 Death
+
+The following code chunk will omit rows with missing month values and join
+the attribute data (Covid_DF) & spatial data (DKI_Jakarta). 
+
+Following which, the cumulative death per 10,0000 population will be
+calculated using the following formula:
+
+$$ Monthly\ Cumulative\ Confirmed\ Death\  = 
+\frac{Total\ no\ of\ Covid-19\ Death\ at\ Sub-District\ 
+Level}{Total\ Population\ of\ the\ Sub-District} *\ 10,000$$
+
+Before that, we will need to inner join Covid_DF and DKI_Jakarta dataframe
+by "Sub_District" and then convert it into sf.  
+
+
+
+```{r echo=TRUE, eval=TRUE}
+
+
+Jakarta_Death <- Covid_DF %>%
+  inner_join(DKI_Jakarta, by=c("Sub_District"="Sub_District")) %>%
+  group_by(Sub_District, Date) %>%
+  dplyr::summarise(`Covid Death Per 10k Population` = ((sum(Death) / (Total_Population)))* 10000)  %>% ungroup()
+
+Jakarta_Death  <- Jakarta_Death %>% left_join(DKI_Jakarta, 
+                       by=c("Sub_District"="Sub_District"))
+
+Jakarta_Death <- st_as_sf(Jakarta_Death )
+
+
+
+```
+
+
+
+
+
+
+
+
+#### 10.2.2 Plotting Choropleth Map of Monthly Cumulative Death
+
+In the code chunk below, tm_shape() is used to define the input data 
+(Jakarta_Covid_Cases) and tm_fill() is used to illustrate the monthly cumulative
+confirmed cases at sub-district level. 
+
+The choropleth map is plotted via a function called Monthly_Death_Map 
+with quantile data classification methods.  
+
+```{r echo=TRUE, eval=TRUE}
+
+Monthly_Death_Map <- function(date) {
+  Jakarta_Death  <- Jakarta_Death  %>% filter(Date == date)
+  Month_Data <-paste("Cumulative Death per 10k population \n in Jakarta Sub-District as at", as.character(date), sep=" ")
+  tmap_mode("plot")+
+  tm_shape(Jakarta_Death)+
+  tm_fill("Covid Death Per 10k Population", 
+          legend.is.portrait = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = Month_Data ,
+            main.title.position = "center",
+            main.title.size = 0.75,title.size = 0.30,
+            legend.height = 0.20, 
+            legend.width = 0.35, 
+            legend.outside = FALSE,
+            legend.position = c("left", "bottom"),
+            frame = TRUE)+
+  tm_compass(type="4star", size = 2) +
+  tm_grid(lwd = 0.1, alpha = 0.2) 
+}
+
+```
+
+The function is then called to plot the cumulative death for March 2021.
+
+```{r echo=TRUE, eval=TRUE}
+
+Monthly_Death_Map('2021-03-31')
+
+```
+
+
+
+#### 10.1.3 Plotting Choropleth Map Between March 2020 - July 2021
+
+
+
+By using group by date in TM_FACETS, we can see the spatial-temporal patterns 
+of COVID-19 death in DKI Jakarta between March 2020 to July 2021.
+
+```{r fig.width=16, fig.height=25}
+
+tm_shape(Jakarta_Death) +
+  tm_fill("Covid Death Per 10k Population",
+          style = "quantile",
+          thres.poly = 0) + 
+  tm_facets(by="Date", 
+            free.coords=TRUE, 
+            drop.shapes=TRUE) + tm_layout(legend.show = TRUE,
+            title.position = c("center", "center"), 
+            title.size = 10,main.title = "Cumulative Death per 10k population In Jakarta Sub-District", legend.outside = FALSE,legend.width = 0.50, legend.text.size = 1.2, legend.position = c("left", "bottom"), panel.label.size = 2.0) +
+  tm_compass(type="4star", size = 2) + 
+  tm_scale_bar(width = 0.15)+
+  tm_grid(lwd = 0.1, alpha = 0.2) +
+  tm_borders(alpha = 0.5)
+
+
+```
+### 11. Animated Thematic Map 
+
+#### 11.1 Spatial-temporal patterns of COVID-19 case in DKI Jakarta Over Time
+
+
+```{r echo=TRUE, eval=TRUE}
+
+knitr::include_graphics("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_site/posts/2021-08-30-take-home-exercise-1/Covd_Cases_Animation.gif")
+```
+
+```{r echo=FALSE, eval=FALSE}
+#Covd_Cases_Animation= tm_shape(Jakarta_Covid_Cases) + tm_fill("Covid Cases Per 10,000 Population",style = "quantile") + tm_facets(along = "Date", free.coords = FALSE)
+#tmap_animation(Covd_Cases_Animation, filename = "Covd_Cases_Animation.gif", delay = 45)
+```
+
+#### 11.2 Spatial-temporal patterns of COVID-19 Death in DKI Jakarta Over Time
+
+```{r echo=FALSE, eval=FALSE}
+#Covd_Death_Animation= tm_shape(Jakarta_Death) + tm_fill("Covid Death Per 10,000 Population",style = "quantile") + tm_facets(along = "Date", free.coords = FALSE)
+#tmap_animation(Covd_Death_Animation, filename = "Covd_Death_Animation.gif", delay = 45)
+```
+
+
+### 12. Analytical Map
+
+#### 12.1 Barchart
+
+To better understand Jakarta sub-district which has been affected by Covid-19 
+the most in terms of infection rate and death rate, we will now proceed to
+plot bar chart that shows the top 10 district with highest Covid-19 cases 
+and death from March 2020 to July 2021. 
+
+
+##### 12.1.1 Bar Chart of Top 10 Sub-District With Highest Covid-19 Cases Per 10,000 Population
+
+###### 12.1.1.1 Combining aspatial and spatial dataframe
+
+Again, we will combine the Covid_DF and DKI_Jakarta data frame by sub_district.
+We will use the same formula to calculate the Covid cases per 10,000 population
+and it will be named as 'Covid_Case_10K'.
+
+```{r echo=TRUE, eval=TRUE}
+
+Jakarta_Covid_Sub_District <- Covid_DF %>%
+  left_join(DKI_Jakarta, by=c("Sub_District"="Sub_District")) %>%
+  group_by(Sub_District) %>% 
+  dplyr::summarise(`Covid_Case_10k` =((sum(Cases) / (Total_Population ))*10000)) %>% ungroup()
+
+```
+
+###### 12.1.1.2 Dropping duplicated and NA Rows
+
+Next, we will get drop the duplicated row as well as the NA rows.
+
+```{r echo=TRUE, eval=TRUE}
+
+Jakarta_Covid_Sub_District <-Jakarta_Covid_Sub_District[!duplicated(Jakarta_Covid_Sub_District), ]
+
+Jakarta_Covid_Sub_District$Covid_Case_10k <- round(Jakarta_Covid_Sub_District$Covid_Case_10k ,0)
+```
+
+###### 12.1.1.3 Plotting barchart 
+
+Following which, we will sort the sub_district by covid cases per 10k population
+and only plot the top 10 sub_district with highest covid cases.
+
+```{r echo=TRUE, eval=TRUE}
+
+top_n(Jakarta_Covid_Sub_District, n=10, Covid_Case_10k) %>%
+          ggplot(., aes(x=Covid_Case_10k, y=reorder(Sub_District, Covid_Case_10k),label= (Covid_Case_10k)))+
+              geom_bar(stat='identity')+ 
+  geom_col(fill='darksalmon') +
+  labs(title='Top 10 Sub-District With Highest Covid-19 Cases Per 10k Population',
+       x='No of Covid Cases',
+       y='Sub-District') +
+  geom_text(nudge_x=-900.85,vjust = 0.5, colour='gray23', size=2.87) +
+  theme_minimal()
+
+```
+
+
+##### 10.1.2 Bar Chart of Top 10 Sub-District With Highest Covid-19 Death Per 
+10,000 Population
+
+###### 12.1.2.1 Combining aspatial and spatial dataframe
+Again, we will combine the Covid_DF and DKI_Jakarta data frame by sub_district.
+We will use the same formula to calculate the Covid death per 10,000 population
+and it will be named as 'Death_Per_10K'.
+
+```{r echo=TRUE, eval=TRUE}
+
+Jakarta_Death_Sub_District <- Covid_DF %>%
+  left_join(DKI_Jakarta, by=c("Sub_District"="Sub_District")) %>%
+  group_by(Sub_District) %>% 
+  dplyr::summarise(Death_Per_10k = ((sum(Death) / (Total_Population ))*10000)) %>% ungroup()
+
+```
+
+###### 12.1.1.2 Dropping duplicated and NA Rows
+
+Next, we will get drop the duplicated row as well as the NA rows.
+
+```{r echo=TRUE, eval=TRUE}
+
+Jakarta_Death_Sub_District <-Jakarta_Death_Sub_District[!duplicated(Jakarta_Death_Sub_District), ]
+
+Jakarta_Death_Sub_District$Death_Per_10k <- round(Jakarta_Death_Sub_District$Death_Per_10k ,0)
+```
+
+###### 12.1.1.3 Bar Chart
+
+Following which, we will sort the sub_district by covid death per 10k population
+and only plot the top 10 sub_district with highest covid death.
+
+```{r echo=TRUE, eval=TRUE}
+
+top_n(Jakarta_Death_Sub_District, n=10, Death_Per_10k) %>%
+          ggplot(., aes(x=Death_Per_10k, y=reorder(Sub_District, Death_Per_10k),label= (Death_Per_10k)))+
+              geom_bar(stat='identity')+ 
+  geom_col(fill='darksalmon') +
+  labs(title='Top 10 Sub-District With Highest Covid-19 Death Per 10k Population',
+       x='No of Death',
+       y='Sub-District') +
+  geom_text(nudge_x=-7.85,vjust = 0.5, colour='gray23', size=2.87) +
+  theme_minimal() + theme(plot.title = element_text(size=10))
+
+
+
+```
+
+
+
+
+
+#12.2 Box Map 
+
+A box map will be used to visualise covid cases spatially across different sub_district
+in Jakarta. 
+
+A customised classification scheme for the choropleth map will be constructed 
+using the basic principles of a box plot.This ensures that data classification 
+is not manipulated, and that the data is visualised accurately to represent 
+the real-world situation. The box map will enable statistical interpretation 
+of outliers and better identification of subzones that have relatively higher 
+or lower demand compared to the rest of the subzones. In this analysis, data 
+points will be considered outliers if they are more than 1.5 times interquartile 
+range.
+
+
+The following code chunks are functions to construct the box map.
+
+```{r echo=TRUE, eval=TRUE}
+
+
+# To create break points for box map
+
+boxbreaks <- function(v, mult=1.5) {
+  qv <- unname(quantile(v))
+  iqr <- qv[4] - qv[2]
+  # upfence and lofence define the area where points will be defined as outliers
+  upfence <- qv[4] + mult * iqr
+  lofence <- qv[2] - mult * iqr
+  # initialize break points vector
+  bb <- vector(mode="numeric",length=7)
+  # logic for lower and upper fences
+  if (lofence < qv[1]) { # no lower outliers
+  bb[1] <- lofence
+  bb[2] <- floor(qv[1])
+  } else {
+  bb[2] <- lofence
+  bb[1] <- qv[1]
+  }
+  if (upfence > qv[5]) { # no upper outliers
+  bb[7] <- upfence
+  bb[6] <- ceiling(qv[5])
+  } else {
+  bb[6] <- upfence
+  bb[7] <- qv[5]
+  }
+  bb[3:5] <- qv[2:4]
+  return(bb)
+}
+
+
+# Extract variable as vector out of dataframe
+get.var <- function(vname, df) {
+  v <- df[vname] # %>% sf::st_set_geometry(NULL)
+  v <- unlist(v) # unname(v[,1])
+  return(v)
+}
+
+
+# Boxmap function
+boxmap <- function(vnam, df, mtitle, legtitle=NA, mult=1.5, palette='-RdBu') {
+  df1 <- drop_na(df)
+  var <- get.var(vnam,df1)
+  bb <- boxbreaks(var)
+  tm_shape(df) +
+    tm_fill(vnam,
+            title=legtitle,
+            breaks=bb,
+            palette="Blues",
+            labels = c("Lower outlier", "< 25%", "25% - 50%", "50% - 75%","> 75%", "Upper outlier")) +
+  tm_borders(lwd=0.1, alpha=1) +
+  tm_layout(main.title = mtitle,
+            main.title.position = 'center',
+            main.title.size = 1,
+            frame = TRUE, legend.position = c("left", "bottom")) +
+  tm_compass(type="4star", size = 2) + 
+  tm_scale_bar(width = 0.15)+
+  tm_grid(lwd = 0.1, alpha = 0.2) +
+  tm_borders(alpha = 0.5)
+}
+
+
+# Boxmap function with points overlayed on top of choropleth map
+boxmap_pts <- function(vnam, df, pointdf, mtitle, legtitle=NA, mult=1.5, palette='-RdBu') {
+  boxmap(vnam, df, mtitle, legtitle=legtitle, mult=mult, palette=palette) +
+  tm_shape(pointdf) +
+    tm_dots(col="gray23")
+}
+
+
+```
+
+We will now use the function using the previous constructed dataframe, Jakarta_Covid_Cases
+to display summary statistics. 
+
+```{r echo=TRUE, eval=TRUE}
+
+Covid_Cases_Boxmap <- boxmap("Covid Cases Per 10k Population", Jakarta_Covid_Cases, mtitle="Jakarta Covid Cases (Mar 2020 - July 2021)")
+Covid_Cases_Boxmap 
+```
+
+
+#10.1.6 Case Fatality Ratio (CFR) 
+
+Case Fatality Ratio (CFR) estimates the proportion of deaths among identified confirmed cases.
+
+```{r echo=TRUE, eval=TRUE}
+
+
+Merged_DF <- Covid_DF %>% select('Cases', 'Sub_District','Death')
+
+Merged_DF<- left_join(DKI_Jakarta, Merged_DF, by= c("Sub_District" = "Sub_District")) %>% group_by (Sub_District) %>% dplyr::summarise(`CF` = (sum(Death) / (sum(Cases))) *100) %>% ungroup()
+
+
+```
+
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("plot")+
+  tm_shape(Merged_DF)+
+  tm_fill("CF",n = 5, style="jenks",
+          legend.is.portrait = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "Case Fatality Ratio (CFR) of Jakarta (Mar 2020- July 2021) ",
+            main.title.position = "center",
+            main.title.size = 0.75,title.size = 0.30,
+            legend.height = 0.20, 
+            legend.width = 0.35, 
+            legend.outside = FALSE,
+            legend.position = c("left", "bottom"),
+            frame = TRUE)+
+  tm_compass(type="4star", size = 2) + 
+  tm_scale_bar(width = 0.15)+
+  tm_grid(lwd = 0.1, alpha = 0.2) 
+
+```
+
+
+#10.1.7 Localised Geospatial Statistic
+
+```{r echo=TRUE, eval=TRUE}
+Jakarta_Covid_Cases_sp <- as(Jakarta_Covid_Cases, 'Spatial')
+Jakarta_Covid_Cases_sp
+```
+
+
+```{r echo=TRUE, eval=TRUE}
+JK_Covid <- poly2nb(Jakarta_Covid_Cases_sp, queen=FALSE)
+```
+
+```{r echo=TRUE, eval=TRUE}
+wm_queen <- poly2nb(Jakarta_Covid_Cases_sp, queen=TRUE)
+summary(wm_queen)
+```
+
+
+```{r echo=TRUE, eval=TRUE}
+print(paste0('Rook contiguity: There are ', length(which(card(JK_Covid)==0)), ' municipalities with no neighbours.'))
+```
+
+```{r echo=TRUE, eval=TRUE}
+print(paste0('Queen contiguity: There are ', length(which(card(wm_queen)==0)), ' municipalities with no neighbours.'))
+```
+
+
+```{r echo=TRUE, eval=TRUE}
+# Create data frame using neighbour list for queen contiguity weight matrix.
+# For each number of neighbour, count the number of municipalities having that number of neighbouring municipalities
+queen_df <- data.frame('Neighbours' = card(wm_queen)) %>%
+  group_by(Neighbours) %>%
+  dplyr::summarise(Count = n())
+queen_df[is.na(queen_df)] = 0
+
+# Create bar chart visualising the distribution of number of neighbours
+ggplot(queen_df, aes(x = Neighbours, y = Count)) +
+  geom_col(fill = 'slategray3') +
+  labs(title = 'Distribution of Number of Neighbours for Municipalities',
+       x = 'Number of Neighbours',
+       y = 'Number of Municipalities') +
+  theme_minimal() +
+  theme(axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
+        axis.title.x = element_text(margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        plot.title = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))
+```
+```{r echo=TRUE, eval=TRUE}
+plot(Jakarta_Covid_Cases_sp, border="lightgrey")
+plot(wm_queen, coordinates(Jakarta_Covid_Cases_sp), pch = 19, cex = 0.6, add = TRUE, col= "red")
+```
+
+
+### Distance-based weight matrices
+```{r echo=TRUE, eval=TRUE}
+coords <- coordinates(Jakarta_Covid_Cases_sp)
+```
+
+### 8.2.2.1 Fixed distance
+```{r echo=TRUE, eval=TRUE}
+k1 <- knn2nb(knearneigh(coords))
+k1dists <- unlist(nbdists(k1, coords))
+
+
+
+wm_fixedd <- dnearneigh(coords, 0, 20497)
+summary(wm_fixedd)
+
+
+plot(Jakarta_Covid_Cases_sp, border="lightgrey")
+plot(wm_fixedd, coords, pch = 19, cex = 0.6, add = TRUE, col= "red")
+```
+
+```{r echo=TRUE, eval=TRUE}
+```
+
+#11.1.8 Local Moran’s I
+
+#11.1.8.1 Compute Local Moran’s I
+```{r echo=TRUE, eval=TRUE}
+localmoran_13 <- localmoran(Jakarta_Covid_Cases['Covid Cases Per 10k Population'], rswm_knn9)
+localmoran_32 <- localmoran(cmexico_covid_sp$cumul32_rate, rswm_knn9)
+
+cmexico_localmoran13 <- cbind(cmexico_covid_sp, localmoran_13)
+cmexico_localmoran32 <- cbind(cmexico_covid_sp, localmoran_32)
+```
+
+
+
+#10.1.9 Relative Risk Map
+
+```{r echo=FALSE, eval=FALSE}
+
+
+Jakarta_Death <- Covid_DF %>%
+  inner_join(DKI_Jakarta, by=c("Sub_District"="Sub_District")) %>%
+  group_by(Sub_District) %>% dplyr::summarise(`Covid Death Per 10k Population` = ((sum(Death)) / (Total_Population / 10000))) 
+
+
+Jakarta_Death  <- Jakarta_Death %>% left_join(Covid_DF, 
+                       by=c("Sub_District"="Sub_District"))
+
+
+Jakarta_Death2 <- Jakarta_Death  %>% group_by(Sub_District) %>% dplyr::summarise(TotalCases = sum(as.numeric(Cases)))%>% ungroup()
+
+
+Jakarta_Death3 <- Jakarta_Death2 %>% left_join(Jakarta_Death, 
+                       by=c("Sub_District"="Sub_District")) %>%  group_by(Sub_District) 
+
+
+Jakarta_Death3 <- Jakarta_Death3[!duplicated(Jakarta_Death3$Sub_District), ]
+
+Jakarta_Death3 <- Jakarta_Death3 %>% left_join(DKI_Jakarta, 
+                       by=c("Sub_District"="Sub_District"))  
+
+Jakarta_Death4 <- Jakarta_Death3 %>% select(Sub_District,TotalCases,Death, 'Covid Death Per 10k Population')
+
+Jakarta_Death4 <- Jakarta_Death4 %>%  group_by(Sub_District)  %>%  dplyr::summarise(ExpectedDeath= TotalCases * 'Covid Death Per 10k Population')
+
+
+
+```
+
+
+```{r echo=FALSE, eval=FALSE}
+Death_Rate <- Covid_DF %>%
+  inner_join(DKI_Jakarta, by=c("Sub_District" = "Sub_District")) %>%
+  group_by(Sub_District, Date) %>%
+  dplyr::summarise(`Cuml_Death_Rate` = (sum(Death) / (Total_Population / 10000))) %>%
+  ungroup() %>% pivot_wider(names_from = Date,
+              values_from = Cuml_Death_Rate)
+
+Death_Rate_Final <- Death_Rate %>% left_join(DKI_Jakarta, 
+                       by=c("Sub_District"="Sub_District"))
+
+
+
+
+
+
+
+
+```
+
+```{r echo=FALSE, eval=FALSE}
+Positive_Cases <- Covid_DF %>% select(Sub_District,Cases,Death)
+
+
+Death_Rate2 <- left_join(Positive_Cases, Death_Rate, by= c("Sub_District" = "Sub_District")) %>% group_by(Sub_District) %>% ungroup()
+#Death_Rate3  <-as.numeric(unlist(Death_Rate2['2021-07-31']))
+#Death_Rate2  <- merge(Death_Rate2,Death_Rate3)
+Death_Rate2["2021-07-31"] <- (unlist(Death_Rate2['2021-07-31']))
+
+Death_Rate2 <- Death_Rate2 %>% group_by(Sub_District) %>% 
+  mutate(`E` = ('2021-07-31' * Cases))
+```
+
+
+```{r echo=FALSE, eval=FALSE}
+
+Death_Rate 
+
+# <- Death_Rate %>% group_by(Sub_District)%>% 
+  #mutate(SMR = (sum(Death) *100000) / EXPECTED_DEATH)
+
+Death_Rate <- left_join(Positive_Cases, Death_Rate, by= c("Sub_District" = "Sub_District")) %>% group_by(Sub_District)%>% dplyr::summarise(`TotalCases` = (sum(Cases)))
+
+
+Death_Rate
+
+Death_Rate <- Death_Rate %>% group_by(Sub_District) %>% 
+  mutate(EXPECTED_DEATH = (TotalCases * 2021-07-31)/10,000)
+
+```
+
+```{r echo=FALSE, eval=FALSE}
+Positive_Cases <- Covid_DF %>% select(Sub_District,Cases,Death)
+
+Death_Rate2 <- left_join(Positive_Cases, Death_Rate, by= c("Sub_District" = "Sub_District")) %>% group_by(Sub_District) 
+
+
+Death_Rate2 <- left_join(Positive_Cases, Death_Rate2, by= c("Sub_District" = "Sub_District")) 
+
+Death_Rate2 <- Death_Rate2 %>% mutate(EXPECTED_DEATH = (Cases.x * 2021-07-31)/10,000)
+
+
+
+
+```
+
+```{r echo=FALSE, eval=FALSE}
+
+Death_Rate_Final <- st_as_sf(Death_Rate_Final)
+
+#Death_Rate_Final <- Death_Rate_Final %>% st_drop_geometry()
+  
+
+
+```
+
