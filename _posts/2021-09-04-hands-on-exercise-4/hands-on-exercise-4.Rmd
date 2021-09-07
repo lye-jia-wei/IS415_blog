@@ -202,7 +202,7 @@ tm_shape(childcare) +
           size=0.05)
 ```
 
-to spot the duplicate points from the map shown: 
+To spot the duplicate points from the map shown: 
 
 - Delete the duplicates but that will also mean that some useful point events will be lost.  
 
