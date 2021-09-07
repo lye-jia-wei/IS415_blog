@@ -8,6 +8,8 @@ author:
 date: 08-30-2021
 output:
   distill::distill_article:
+    toc: true
+    toc_depth: 4
     self_contained: false
 ---
 
@@ -90,7 +92,7 @@ for(p in packages){
 }
 ```
 
-## 5.Data Import
+## 5. Data Import
 
 ### 5.1 Importing Geospatial Data Into R
 
@@ -110,7 +112,7 @@ There are a total of 269 multipolygon features and 161 fields in DKI_Jakarta sim
 feature data frame. DKI is in WGS84 projected coordinates systems. 
 
 
-###5.2 Importing Attribute Data Into R
+### 5.2 Importing Attribute Data Into R
 
 Next, we will import monthly Covid-19 data XLSX file from a folder into RStudio 
 and save it into an R dataframe called Covid_DF.
@@ -141,7 +143,7 @@ Covid_DF <- ldply(DF_List, data.frame)
 ```
 
 
-## 6.Data Extraction, Wrangling and Integration
+## 6. Data Extraction, Wrangling and Integration
 
 ### 6.1 Geospatial Data
 
@@ -203,7 +205,7 @@ with the World Geodetic System 1984 datum.
 ```{r echo=TRUE, eval=TRUE}
 st_crs(DKI_Jakarta)
 ```
-#### 6.1.6 Assigning a coordinate system 
+#### 6.1.4 Assigning a coordinate system 
 
 Although DKI_Jakarta data frame is projected in WGS84 but when we read until 
 the end of the print, it indicates that the EPSG is 4326. This is a wrong EPSG 
@@ -228,7 +230,7 @@ st_crs(DKI_Jakarta)
 - We have successfully assign DGN95:23845 as the projection for the data.
 
 
-#### 6.1.4 Removing Outer Islands
+#### 6.1.5 Removing Outer Islands
 
 To exclude all the outer islands from the DKI_Jakarta dataframe, we will plot
 an interactive map to identify the mainland.
@@ -252,7 +254,7 @@ DKI_Jakarta <- filter(DKI_Jakarta, OBJECT_ID > 25383)
 
 
 
-#### 6.1.5 NA, Geometric Validity Checks and Correction
+#### 6.1.6 NA, Geometric Validity Checks and Correction
 
 To check if there are any NA values as a result of data manipulation in the previous step.
 
@@ -263,7 +265,7 @@ DKI_Jakarta[rowSums(is.na(DKI_Jakarta))!=0,]
 
 
 
-#### 6.1.4 Retain the first nine fields in the DKI Jakarta sf data frame
+#### 6.1.7 Retain the first nine fields in the DKI Jakarta sf data frame
 
 Since we are only interested in the first nine fields of the DKI_Jakarta sf
 dataframe, we will only retain these columns.
@@ -273,7 +275,7 @@ dataframe, we will only retain these columns.
 DKI_Jakarta <- DKI_Jakarta[, 0:9]
 ```
 
-#### 6.1.5 Translating column name for DKI_Jakarta to English
+#### 6.1.8 Translating column name for DKI_Jakarta to English
 
 For convenience and ease of comprehension, we will translate the DKI_Jakarta
 column names to English. 
@@ -455,13 +457,13 @@ Covid_DF$Death <- as.numeric(Covid_DF$Death)
 
 
 
-## 8. Study Area 
+## 7. Study Area 
 
 To better understand the study area and Jakarta_Covid dataframe, tmap is used to plot
 choropleth map to quickly visualize spatial relation of Covid-19 cases and 
 deaths in Jakarta respectively.
 
-## 8.1 Joining the Attribute Data & Spatial Data
+### 7.1 Joining the Attribute Data & Spatial Data
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -472,7 +474,7 @@ Jakarta_Covid <- left_join(DKI_Jakarta, Covid_DF,
 
 
 
-### 8.2 Preliminary Choropleth Map of Covid-19 Cases in Jakarta 
+### 7.2 Preliminary Choropleth Map of Covid-19 Cases in Jakarta 
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -484,7 +486,7 @@ tm_shape(Jakarta_Covid)+
 ```
 
 
-### 8.3 Preliminnary Choropleth Map of Covid-19 Death in Jakarta 
+### 7.3 Preliminnary Choropleth Map of Covid-19 Death in Jakarta 
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -500,7 +502,7 @@ Hence, in the following segment, we will be investigating the reason behind the
 missing data and determine if additional data cleaning needs to be done.  
 
 
-## 9. Data Inspection & Data Cleaning Round 2 
+## 8. Data Inspection & Data Cleaning Round 2 
 
 ```{r echo=TRUE, results='hide'}
 
@@ -515,7 +517,7 @@ e.g 'KRAMAJATI' vs 'KRAMAT JATI' which resulted in missing data when joining
 the aspatial & spatial data.
 
 
-### 9.1 Identifying Missing Sub-District
+### 8.1 Identifying Missing Sub-District
 
 To establish a systematic way of checking for missing values, we will
 compare the two data frame - DKI_Jakarta and Covid_DF. The following code chunk 
@@ -550,7 +552,7 @@ have missing word
 - TENGAH (Correct: 'KAMPUNG TENGAH')
 
 
-### 9.2 Clean Sub-District Data
+### 8.2 Clean Sub-District Data
 
 The following code chunk corrects the misspelt sub-district in preparation for
 joining the attribute data & spatial data in the next step. 
@@ -573,7 +575,7 @@ Covid_DF<- Covid_DF %>% mutate(District = ifelse(as.character(District) == "KALI
 ```
 
 
-### 9.3 Joining the Attribute Data & Spatial Data
+### 8.3 Joining the Attribute Data & Spatial Data
 
 To check the sub_district data, we will have to left join the DKI_Jakarta dataframe
 and Covid_DF dataframe again.
@@ -586,7 +588,7 @@ Jakarta_Covid <- left_join(DKI_Jakarta, Covid_DF,
 ```
 
 
-### 9.4 Checking Sub-District Data
+### 8.4 Checking Sub-District Data
 
 Plotting the cases against the map of Jakarta to verify that all the misspelled
 sub-district and district are corrected.
@@ -601,9 +603,9 @@ tm_shape(Jakarta_Covid)+
 - From the output, we can see that all the data are now corrected. 
 
 
-## 10. Writing and Reading RDS
+## 9. Writing and Reading RDS
 
-### 10.1 Writing RDS
+### 9.1 Writing RDS
 
 Next, we will use the write_rds() function to export the data frame. 
 
@@ -612,7 +614,7 @@ write_rds(Covid_DF, file ="Covid_DF.rds")
 write_rds(DKI_Jakarta, file ="DKI_Jakarta.rds")
 ```
 
-### 10.2 Read RDS
+### 9.2 Read RDS
 
 ```{DS echo=FALSE, eval=FALSE}
 
@@ -621,7 +623,7 @@ DKI_Jakarta <- read_rds("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_pos
 
 ```
 
-#### 11. Exploratory Data Analysis
+## 10. Exploratory Data Analysis
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -642,16 +644,16 @@ observed from the increasing mean COVID-19 case rates across the months.
 
 
 
-### 12. Thematic Mapping 
+## 11. Thematic Mapping 
 
 To better understand the spatio-temporal distribution of COVID-19 at the sub_district level, choropleth mapping techniques will be utilised for the analysis.
 
 Choropleth maps visualising the spatial distribution of COVID-19 rates across sub_district in Jakarta, will be plotted across time (March 2020 to July 2021).
 Covid Cases Per 10k Population will be visualised instead of the number of COVID-19 cases to standardised population sizes for a more holistic comparison.
 
-#### 12.1 Cumulative Confirmed Cases 
+#### 11.1 Cumulative Confirmed Cases 
 
-#### 12.1.1 Data preparation
+#### 11.1.1 Data preparation
 The following code chunk will inner join join the attribute data (Covid_DF) & 
 spatial data (DKI_Jakarta). 
 
@@ -682,7 +684,7 @@ Jakarta_Covid_Cases<- st_as_sf(Jakarta_Covid_Cases)
 
 
           
-#### 12.1.2 Plotting Choropleth Map of Monthly Cumulative Confirmed Cases 
+#### 11.1.2 Plotting Choropleth Map of Monthly Cumulative Confirmed Cases 
 
 In the code chunk below, tm_shape() is used to define the input data 
 (Jakarta_Covid_Cases) and tm_fill() is used to illustrate the monthly cumulative
@@ -762,7 +764,7 @@ compared to other sub-district.
 
 
 
-#### 12.1.3 Time-series choropleth map of COVID-19 Rates
+#### 11.1.3 Time-series choropleth map of COVID-19 Rates
 
 
 By using tm group by date in TM_FACETS, we can see the spatial-temporal patterns 
@@ -795,28 +797,23 @@ tm_shape(Jakarta_Covid_Cases) +
 - In the first half of 2021, COVID-19 cases per 10k population appears to spread throughout Jakarta. However, it is to noted that due to the
 large class interval of 395 to 3808, difference between the various sub_district may not be apparently from April 2021 onwards. 
 
-#### 12.1.4 Animated Time-series choropleth map of COVID-19 Rates
+#### 11.1.4 Animated Time-series choropleth map of COVID-19 Rates
 
 To better visualize the changes across the various sub-district through time,
 we will plot an animated map with the same data.
 
-```{r echo=TRUE, eval=TRUE}
+```{r echo=FALSE, eval=FALSE}
 
 
 Covd_Cases_Animation= tm_shape(Jakarta_Covid_Cases)+ tm_fill("Cases Per 10k Population", breaks = c(0, 4, 13, 53, 119, 270, 395, 3808) ,palette = "Reds") +  tm_facets(along = "Date", free.coords = FALSE)
   
   
-tmap_animation(Covd_Cases_Animation, delay = 45)
-```
+tmap_animation(Covd_Cases_Animation,file="C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/Covid_Case_Animation.gif" , delay = 45)
 
-```{r, fig.cap="Time-series choropleth map of COVID-19 Rates",fig.show = 'animate', ffmpeg.format = 'gif'}
-knitr::include_graphics("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_site/posts/2021-08-30-take-home-exercise-1/Covd_Cases_Animation.gif")
-```
 
-```{r echo=TRUE, eval=TRUE, fig.show = 'animate', ffmpeg.format = 'gif'}
-
-knitr::include_graphics("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_site/posts/2021-08-30-take-home-exercise-1/Covd_Cases_Animation.gif")
 ```
+![](C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/Covid_Case_Animation.gif)
+
 
 
 
@@ -974,6 +971,7 @@ tmap_animation(Covd_Death_Animation, delay = 45)
 knitr::include_graphics("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_site/posts/2021-08-30-take-home-exercise-1/Covd_Death_Animation.gif")
 ```
 
+![](C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/Covd_Death_Animation.gif)
 
 ### 13. Analytical Map
 
