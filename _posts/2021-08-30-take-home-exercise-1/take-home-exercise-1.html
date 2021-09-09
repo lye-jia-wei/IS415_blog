@@ -2527,7 +2527,7 @@ Level}{Total\ Population\ of\ the\ Sub-District} \ *\ 10,000\]</span></p>
 <h5 id="time-series-choropleth-map-of-covid-19-rates">11.1.3 Time-series choropleth map of COVID-19 Rates</h5>
 <p>By using tm group by date in TM_FACETS, we can see the spatial-temporal patterns of COVID-19 case in DKI Jakarta between March 2020 to July 2021.</p>
 <div class="layout-chunk" data-layout="l-body">
-<p><img src="take-home-exercise-1_files/figure-html5/unnamed-chunk-43-1.png" width="1440" /></p>
+<p><img src="take-home-exercise-1_files/figure-html5/unnamed-chunk-43-1.png" width="1920" /></p>
 </div>
 <ul>
 <li><p>It can be observed that COVID-19 cases seem to spread outwards to the neighbouring sub-district with time.</p></li>
@@ -2603,7 +2603,6 @@ Level}{Total\ Population\ of\ the\ Sub-District} *\ 10,000\]</span></p>
 </div>
 <p>With the result and considering legibility, we will set the number of classes to be 7</p>
 <p>The choropleth map is plotted with custom classification scheme.</p>
-<p>Cumulative Death per 10,000 population of Jakarta Sub-district - March 2020</p>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="take-home-exercise-1_files/figure-html5/unnamed-chunk-48-1.png" width="2496" /></p>
 </div>
@@ -2612,7 +2611,6 @@ Level}{Total\ Population\ of\ the\ Sub-District} *\ 10,000\]</span></p>
 </ul>
 <h5 id="time-series-choropleth-map-of-covid-19-rates-1">11.2.3 Time-series choropleth map of COVID-19 Rates</h5>
 <p>By using tm group by date in TM_FACETS, we can see the spatial-temporal patterns of COVID-19 death in DKI Jakarta between March 2020 to July 2021.</p>
-Cumulative Death per 10k population In Jakarta Sub-District
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="take-home-exercise-1_files/figure-html5/unnamed-chunk-49-1.png" width="1920" /></p>
 </div>
@@ -2788,7 +2786,7 @@ Cumulative Death per 10k population In Jakarta Sub-District
   <span class='fu'>tm_borders</span><span class='op'>(</span>lwd<span class='op'>=</span><span class='fl'>0.1</span>, alpha<span class='op'>=</span><span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span>
   <span class='fu'>tm_layout</span><span class='op'>(</span>main.title <span class='op'>=</span> <span class='va'>mtitle</span>,
             main.title.position <span class='op'>=</span> <span class='st'>'center'</span>,
-            main.title.size <span class='op'>=</span> <span class='fl'>1</span>,
+            main.title.size <span class='op'>=</span> <span class='fl'>1.5</span>,
             frame <span class='op'>=</span> <span class='cn'>TRUE</span>,legend.title.size <span class='op'>=</span> <span class='fl'>1.20</span>, legend.text.size <span class='op'>=</span> <span class='fl'>1.10</span>, legend.position <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"left"</span>, <span class='st'>"bottom"</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
   <span class='fu'>tm_compass</span><span class='op'>(</span>type<span class='op'>=</span><span class='st'>"4star"</span>, size <span class='op'>=</span> <span class='fl'>3</span><span class='op'>)</span> <span class='op'>+</span> 
   <span class='fu'>tm_scale_bar</span><span class='op'>(</span>width <span class='op'>=</span> <span class='fl'>0.10</span>, text.size <span class='op'>=</span> <span class='fl'>0.90</span><span class='op'>)</span><span class='op'>+</span>
@@ -2843,11 +2841,11 @@ Level}{Total\ Covid-19\ Cases\ of\ the\ Sub-District} *\ 100\]</span></p>
   <span class='fu'>tm_borders</span><span class='op'>(</span>alpha <span class='op'>=</span> <span class='fl'>0.5</span><span class='op'>)</span> <span class='op'>+</span>
   <span class='fu'>tm_layout</span><span class='op'>(</span>main.title <span class='op'>=</span> <span class='st'>"Case Fatality Ratio (CFR) of Jakarta (Mar 2020- July 2021) "</span>,
             main.title.position <span class='op'>=</span> <span class='st'>"center"</span>,
-            main.title.size <span class='op'>=</span> <span class='fl'>0.75</span>,title.size <span class='op'>=</span> <span class='fl'>0.30</span>,legend.title.size <span class='op'>=</span> <span class='fl'>0.70</span>, 
+            main.title.size <span class='op'>=</span> <span class='fl'>0.75</span>,title.size <span class='op'>=</span> <span class='fl'>0.30</span>,legend.title.size <span class='op'>=</span> <span class='fl'>0.80</span>, 
             legend.outside <span class='op'>=</span> <span class='cn'>FALSE</span>,
             legend.position <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"left"</span>, <span class='st'>"bottom"</span><span class='op'>)</span>,
             frame <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span><span class='op'>+</span>
-  <span class='fu'>tm_compass</span><span class='op'>(</span>type<span class='op'>=</span><span class='st'>"4star"</span>, size <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'>tm_compass</span><span class='op'>(</span>type<span class='op'>=</span><span class='st'>"4star"</span>, size <span class='op'>=</span> <span class='fl'>1.5</span><span class='op'>)</span> <span class='op'>+</span> 
   <span class='fu'>tm_scale_bar</span><span class='op'>(</span>width <span class='op'>=</span> <span class='fl'>0.10</span><span class='op'>)</span><span class='op'>+</span>
   <span class='fu'>tm_grid</span><span class='op'>(</span>lwd <span class='op'>=</span> <span class='fl'>0.1</span>, alpha <span class='op'>=</span> <span class='fl'>0.2</span><span class='op'>)</span> 
 </code></pre>
@@ -3172,7 +3170,7 @@ max values  :   BAMBU APUS, 18717,         325.423302070876,     25642,   317510
           title <span class='op'>=</span> <span class='st'>'P-values'</span>, title.size<span class='op'>=</span><span class='fl'>2.8</span><span class='op'>)</span><span class='op'>+</span>
   <span class='fu'>tm_compass</span><span class='op'>(</span>type<span class='op'>=</span><span class='st'>"4star"</span>, size <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span> <span class='op'>+</span> 
   <span class='fu'>tm_scale_bar</span><span class='op'>(</span>width <span class='op'>=</span> <span class='fl'>0.15</span>,text.size <span class='op'>=</span> <span class='fl'>2.30</span><span class='op'>)</span><span class='op'>+</span>
-  <span class='fu'>tm_grid</span><span class='op'>(</span>lwd <span class='op'>=</span> <span class='fl'>0.1</span>, alpha <span class='op'>=</span> <span class='fl'>0.2</span>,labels.size<span class='op'>=</span><span class='fl'>2.00</span><span class='op'>)</span><span class='op'>+</span>
+  <span class='fu'>tm_grid</span><span class='op'>(</span>lwd <span class='op'>=</span> <span class='fl'>0.1</span>, alpha <span class='op'>=</span> <span class='fl'>0.2</span>,labels.size<span class='op'>=</span><span class='fl'>1.50</span><span class='op'>)</span><span class='op'>+</span>
   <span class='fu'>tm_borders</span><span class='op'>(</span>alpha <span class='op'>=</span> <span class='fl'>0.5</span><span class='op'>)</span> <span class='op'>+</span>
   <span class='fu'>tm_layout</span><span class='op'>(</span>panel.labels <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sprintf.html'>sprintf</a></span><span class='op'>(</span><span class='st'>'Local Moran\'s I p-values,%s'</span>, <span class='va'>Date</span><span class='op'>)</span>,
             panel.label.color <span class='op'>=</span> <span class='st'>'gray12'</span>, legend.outside <span class='op'>=</span> <span class='cn'>FALSE</span>,legend.title.size <span class='op'>=</span> <span class='fl'>2.75</span>, legend.text.size <span class='op'>=</span> <span class='fl'>2.55</span>, panel.label.size <span class='op'>=</span> <span class='fl'>3</span><span class='op'>)</span>
