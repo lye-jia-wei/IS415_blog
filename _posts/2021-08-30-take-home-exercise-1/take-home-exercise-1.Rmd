@@ -928,7 +928,7 @@ tm_shape(Jakarta_Death) +
             drop.shapes=TRUE) +
   tm_layout(legend.show = TRUE, title.position = c("center", "center"), main.title.size = 4, main.title = "   Cumulative Covid-19 Death Rate In Jakarta Sub-District",  legend.outside = FALSE,legend.width = 0.70, legend.text.size = 1.80, legend.title.size = 1.80, legend.position = c("left", "bottom"), panel.label.size = 2.5) +
   tm_compass(type="4star", size = 4) + 
-  tm_scale_bar(width = 0.15,text.size = 1.80)+
+  tm_scale_bar(width = 0.10,text.size = 1.80)+
   tm_grid(lwd = 0.1, alpha = 0.2,labels.size=1.50) +
   tm_borders(alpha = 0.5)
 
