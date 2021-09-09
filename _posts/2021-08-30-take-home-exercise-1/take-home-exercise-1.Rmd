@@ -65,9 +65,7 @@ data_set <- data.frame(Data,Description,Format, Source)
 knitr::kable(head(data_set))
 ```
 *Note: Jakarta COVID-19 data file for last day of each month is used with the 
-exception of missing file for 31 January 2021, hence 30th January 2021 data set 
-is used*
-
+exception of missing file for January 2021
 
 ## 4. Getting Started
 
@@ -238,13 +236,14 @@ an interactive map to identify the mainland.
 
 ```{r echo=TRUE, results='hide'}
 
-tmap_mode("plot")
+tmap_mode("view")
 tm_shape(DKI_Jakarta)+
   tm_fill()
 ```
 
 From the initial exploration, it can be found that Object_ID greater than 25383
-consists of the island. Hence, we will proceed to filter them out.
+consists of the island. Hence, we will proceed to filter them out using the code
+chunk below.
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -280,7 +279,7 @@ DKI_Jakarta <- DKI_Jakarta[, 0:9]
 #### 6.1.8 Translating column name for DKI_Jakarta to English
 
 For convenience and ease of comprehension, we will translate the DKI_Jakarta
-column names to English. 
+column names to English by using tidyverse rename function. 
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -302,13 +301,13 @@ DKI_Jakarta$Total_Population <- as.numeric(DKI_Jakarta$Total_Population)
 ### 6.2 Aspatial Data
 
 
-#### 6.2.1 Understanding Temp_Covid_DF
+#### 6.2.1 Understanding Covid_DF
 
-To better understand the data structure of Temp_Covid_DF, we will inspect it
-quickly. 
+To better understand the data structure of Covid_DF, we will inspect it
+quickly by looking at 5 rows. 
 
 ```{r echo=TRUE, eval=TRUE}
-head(Covid_DF)
+head(Covid_DF,5)
 ```
 
 While combining the different XLSX file into the dataframe, it resulted in 
@@ -319,8 +318,8 @@ as well as other irrelevant columns.
 #### 6.2.2 Coalesce 'ID_KEL' & 'Meninngal' column
 
 A quick glance at dataframe suggest that there are duplicated  'ID_KEL' column.
-Hence, coalesce needs to be done to ensure that all the ID are present one single
-ID column. 
+Hence, we can use the coalesce function which finds the first non-missing value 
+at each position to ensure that all the ID are present one single ID column. 
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -332,12 +331,12 @@ Covid_DF <- Covid_DF %>%
 
 We will then repeat this step for the 'Meninngal' column. Before we 
 coalesce the various Meninggal column, we will have to change the data 
-type of the column as they are of different data type.
+type of the column to double as the original column is of different data type.
+
 
 ```{r echo=TRUE, eval=TRUE}
 
 Covid_DF$Meninggal...26 = as.double(Covid_DF$Meninggal...26)
-
 
 Covid_DF <- Covid_DF %>% 
   mutate(Meninggal = coalesce(Meninggal, Meninggal...28, Meninggal...29, Meninggal...30, Meninggal...31, Meninggal...26))
@@ -346,7 +345,7 @@ Covid_DF <- Covid_DF %>%
 
 #### 6.2.3 Extract Column of Interest
 
-While there are many columns in Temp_Covid_DF, the relevant columns for analysis
+While there are many columns in Covid_DF, the relevant columns for analysis
 are: 
 
 - Name_provinsi (Province)
@@ -370,6 +369,7 @@ Covid_DF <- Covid_DF %>% select("Date","ID_KEL",
 
 ```
 
+
 #### 6.2.4 Adding in 'Date' Column 
 
 Since the focus of this analysis will require the time period of the cases,
@@ -377,10 +377,11 @@ we will add a 'Date' column.
 
 A quick look at the XLSX file suggest that a pattern exist:
 
-XLSX File Name: Standar Kelurahan Data Corona (28 Februari 2021 Pukul 10.00).xlsx
+- XLSX File Name: Standar Kelurahan Data Corona (28 Februari 2021 Pukul 10.00).xlsx
 
-The date is formatted as DD-Month-YYY in bracket right before ( and the word 'Pukul'.
-Hence, we will use regular expressions to extract the date.
+- The date is formatted as DD-Month-YYY in bracket right before ( and the word 'Pukul'\
+
+- Hence, we will use regular expressions to extract the date.
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -389,7 +390,7 @@ Covid_DF$Date <- str_extract(Covid_DF$Date,"(?<=Data Corona \\().*(?= Pukul)")
 ```
 
 
-By looking through Temp_Covid_DF, we can see that the month is spelled in 
+By looking through Covid_DF, we can see that the month is spelled in 
 Bahasa Indonesia which is the national adminstrative language of Indonesia.
 With that, we have to set locale to Indonesia and format the date.
 
@@ -413,6 +414,7 @@ Covid_DF <- Covid_DF %>%
 ```
 
 
+
 #### 6.2.6 Dropping Columns 
 
 Quick inspection of Covid_DF dataframe suggest that there are non-numeric
@@ -432,33 +434,6 @@ Covid_DF <-Covid_DF [!(Covid_DF$ID=="BELUM DIKETAHUI" | Covid_DF$ID=="PROSES UPD
 ```
 
 
-#### 6.2.7 Changing Data Type of Column 
-
-
-```{r echo=FALSE, eval=FALSE}
-
-#Changing Cases data type from character to numeric
-
-Covid_DF$Cases <- as.numeric(Covid_DF$Cases)
-
-
-
-
-Covid_DF$Death[is.na(Covid_DF$Death)] = 0
-
-Covid_DF$Death <- as.numeric(Covid_DF$Death)
-
-
-
-
-
-
-```
-
-
-
-
-
 ## 7. Study Area 
 
 To better understand the study area and Jakarta_Covid dataframe, tmap is used to plot
@@ -466,6 +441,12 @@ choropleth map to quickly visualize spatial relation of Covid-19 cases and
 deaths in Jakarta respectively.
 
 ### 7.1 Joining the Attribute Data & Spatial Data
+
+First, we will left join DKI_Jakarta and Covid_DF by:
+
+- Province
+- Sub-district
+- City
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -478,6 +459,9 @@ Jakarta_Covid <- left_join(DKI_Jakarta, Covid_DF,
 
 ### 7.2 Preliminary Choropleth Map of Covid-19 Cases in Jakarta 
 
+Next, we will plot the preliminary choropleth map of Covid-19 cases in Jakarta.
+Note that this map is incomplete and is solely for understanding of data.
+
 ```{r echo=TRUE, eval=TRUE}
 
 tmap_mode("plot")
@@ -489,6 +473,8 @@ tm_shape(Jakarta_Covid)+
 
 
 ### 7.3 Preliminnary Choropleth Map of Covid-19 Death in Jakarta 
+
+We will repeat the same step for Covid-19 death column.
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -506,7 +492,7 @@ missing data and determine if additional data cleaning needs to be done.
 
 ## 8. Data Inspection & Data Cleaning Round 2 
 
-```{r echo=TRUE, results='hide'}
+```{r echo = TRUE, eval = FALSE}
 
 View(Jakarta_Covid)
 View(DKI_Jakarta)
@@ -523,7 +509,8 @@ the aspatial & spatial data.
 
 To establish a systematic way of checking for missing values, we will
 compare the two data frame - DKI_Jakarta and Covid_DF. The following code chunk 
-will identify the missing 'sub-district' values.
+will identify the missing 'sub-district' value by comparing the two Sub-district
+column of the two dataframe - Covid_DF and DKI_Jakarkta
 
 ```{r echo=TRUE, eval=TRUE}
 Covid_SD <-c(Covid_DF$Sub_District)
@@ -547,6 +534,7 @@ incorrectly:
 - BALEKAMBANG (Correct: 'BALE KAMBANG')
 - HALIM PERDANA KUSUMA (Correct: HALIM PERDANA KUSAMAH)
 - KALI DERES (Correct: KALIDERES)
+
 
 Apart from spelling mistakes,there were also sub-districts value that have
 have missing word
@@ -611,16 +599,19 @@ tm_shape(Jakarta_Covid)+
 
 Next, we will use the write_rds() function to export the data frame. 
 
-```{DS echo=FALSE, eval=FALSE}
+```{r echo = TRUE, eval = FALSE}
+
 write_rds(Covid_DF, file ="Covid_DF.rds")
 write_rds(DKI_Jakarta, file ="DKI_Jakarta.rds")
 ```
 
 ### 9.2 Read RDS
 
-```{DS echo=FALSE, eval=FALSE}
+Next, we will read the RDS. 
 
-Covid_DFG <- read_rds("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/Covid_DF.rds")
+```{r echo = TRUE, eval = FALSE}
+
+Covid_DF <- read_rds("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/Covid_DF.rds")
 DKI_Jakarta <- read_rds("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/DKI_Jakarta.rds")
 
 ```
@@ -694,7 +685,7 @@ confirmed cases at sub-district level.
 
 
 
-Classification Method
+*Classification Method*
 
 Custom breaks will have to be specified explicitly to construct the classification 
 scheme for Covid Cases Per 10k Population.
@@ -728,7 +719,7 @@ Classes
 
 The choropleth map is plotted with custom classification scheme.  
 
-```{r fig.width=16, fig.height=10}
+```{r fig.width=26, fig.height=20}
 
 
 Jakarta_Covid_Cases_March <- Jakarta_Covid_Cases %>% filter(Date == "2020-03-31")
@@ -741,13 +732,13 @@ legend.is.portrait = TRUE) +
 tm_borders(alpha = 0.5) +
 tm_layout(main.title = "Cumulative Confirmed Cases per 10,000 population \n of Jakarta sub-district - March 2020" ,
             main.title.position = "center",
-            main.title.size = 1.85,title.size = 0.30,
-            legend.outside = FALSE,legend.title.size = 1.40, legend.text.size = 1.10,
+            main.title.size = 3.0,title.size = 3.00,
+            legend.outside = FALSE,legend.title.size = 2.90, legend.text.size = 2.60,
             legend.position = c("left", "bottom"),
             frame = TRUE)+
-  tm_compass(type="4star", size = 4) + 
-  tm_scale_bar(width = 0.15)+
-  tm_grid(lwd = 0.1, alpha = 0.2) 
+  tm_compass(type="4star", size = 8) + 
+  tm_scale_bar(width = 0.15,text.size = 1.50)+
+  tm_grid(lwd = 0.1, alpha = 0.2,labels.size=2.00) 
 
 ```
 
@@ -772,7 +763,7 @@ compared to other sub-district.
 By using tm group by date in TM_FACETS, we can see the spatial-temporal patterns 
 of COVID-19 case in DKI Jakarta between March 2020 to July 2021.
 
-```{r fig.width=16, fig.height=25}
+```{r fig.width=15, fig.height=35}
 
 tm_shape(Jakarta_Covid_Cases) +
   tm_fill("Cases Per 10k Population", breaks = c(0, 4, 13, 53, 119, 270, 395, 3808),
@@ -782,10 +773,10 @@ tm_shape(Jakarta_Covid_Cases) +
             drop.shapes=TRUE) +
   tm_layout(legend.show = TRUE,
             title.position = c("center", "center"), 
-            title.size = 10,main.title = "Cumulative Confirmed Cases per 10k population In Jakarta Sub-District", legend.outside = FALSE,legend.width = 0.70, legend.text.size = 1.5, legend.position = c("left", "bottom"), panel.label.size = 2.0) +
-  tm_compass(type="4star", size = 2) + 
-  tm_scale_bar(width = 0.15)+
-  tm_grid(lwd = 0.1, alpha = 0.2) +
+            title.size = 50,main.title = "Cumulative Confirmed Cases per 10k population In Jakarta Sub-District From March 2020 to July 2021", legend.outside = FALSE,legend.width = 0.70, legend.text.size = 1.90, legend.title.size = 1.80, legend.position = c("left", "bottom"), panel.label.size = 2.5) +
+  tm_compass(type="4star", size = 4) + 
+  tm_scale_bar(width = 0.15,text.size = 1.90)+
+  tm_grid(lwd = 0.1, alpha = 0.2,labels.size=1.50) +
   tm_borders(alpha = 0.5)
 
 
@@ -804,7 +795,7 @@ large class interval of 395 to 3808, difference between the various sub_district
 To better visualize the changes across the various sub-district through time,
 we will plot an animated map with the same data.
 
-```{r echo=FALSE, eval=FALSE}
+```{r echo = TRUE, eval = FALSE}
 
 
 Covd_Cases_Animation= tm_shape(Jakarta_Covid_Cases)+ tm_fill("Cases Per 10k Population", breaks = c(0, 4, 13, 53, 119, 270, 395, 3808) ,palette = "Reds") +  tm_facets(along = "Date", free.coords = FALSE)
@@ -814,6 +805,8 @@ tmap_animation(Covd_Cases_Animation,file="C:/Users/User/Desktop/IS415/lye-jia-we
 
 
 ```
+*Cumulative Confirmed Cases per 10k population In Jakarta Sub-District From Mar 2020 - Jul 2021*
+
 ![](C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/Covid_Case_Animation.gif)
 
 
@@ -893,26 +886,24 @@ be 7
 
 The choropleth map is plotted with custom classification scheme.  
 
-```{r fig.width=16, fig.height=10}
+Cumulative Death per 10,000 population of Jakarta Sub-district - March 2020
+
+```{r fig.width=26, fig.height=22}
 
 
 Jakarta_Death_March <- Jakarta_Death %>% filter(Date == "2020-03-31")
-
 
 tmap_mode("plot")+
 tm_shape(Jakarta_Death_March)+
 tm_fill("Death Per 10k Population", breaks = c(0, 2, 4, 6, 8, 10, 12, 14), 
 legend.is.portrait = TRUE) +
 tm_borders(alpha = 0.5) +
-tm_layout(main.title = "Cumulative Death per 10,000 population \n of Jakarta sub-district - March 2020" ,
-            main.title.position = "center",
-            main.title.size = 1.85,title.size = 0.30,
-            legend.outside = FALSE,legend.title.size = 1.40, legend.text.size = 1.10,
+tm_layout(legend.outside = FALSE,legend.title.size = 2.90, legend.text.size = 2.60,
             legend.position = c("left", "bottom"),
             frame = TRUE)+
-  tm_compass(type="4star", size = 4) + 
-  tm_scale_bar(width = 0.15)+
-  tm_grid(lwd = 0.1, alpha = 0.2) 
+  tm_compass(type="4star", size = 8) + 
+  tm_scale_bar(width = 0.15,text.size = 1.50)+
+  tm_grid(lwd = 0.1, alpha = 0.2,labels.size=2.00) 
 
 ```
 
@@ -926,7 +917,8 @@ the highest Covid death in March 2020.
 By using tm group by date in TM_FACETS, we can see the spatial-temporal patterns 
 of COVID-19 death in DKI Jakarta between March 2020 to July 2021.
 
-```{r fig.width=16, fig.height=25}
+Cumulative Death per 10k population In Jakarta Sub-District
+```{r fig.width=20, fig.height=45}
 
 tm_shape(Jakarta_Death) +
   tm_fill("Death Per 10k Population", breaks = c(4, 8, 12, 16, 20, 24, 28, 32),
@@ -934,13 +926,17 @@ tm_shape(Jakarta_Death) +
   tm_facets(by="Date", 
             free.coords=TRUE, 
             drop.shapes=TRUE) +
-  tm_layout(legend.show = TRUE,
-            title.position = c("center", "center"), 
-            title.size = 10,main.title = "Cumulative Death per 10k population In Jakarta Sub-District", legend.outside = FALSE,legend.width = 0.70, legend.text.size = 1.5, legend.position = c("left", "bottom"), panel.label.size = 2.0) +
-  tm_compass(type="4star", size = 2) + 
-  tm_scale_bar(width = 0.15)+
-  tm_grid(lwd = 0.1, alpha = 0.2) +
+  tm_layout(legend.show = TRUE, legend.outside = FALSE,legend.width = 0.70, legend.text.size = 1.90, legend.title.size = 1.90, legend.position = c("left", "bottom"), panel.label.size = 2.5) +
+  tm_compass(type="4star", size = 4) + 
+  tm_scale_bar(width = 0.15,text.size = 1.90)+
+  tm_grid(lwd = 0.1, alpha = 0.2,labels.size=1.50) +
   tm_borders(alpha = 0.5)
+
+
+
+
+
+
 
 ```
 
@@ -961,7 +957,7 @@ be a result of the more fatal Covid-19 Delta variant, though additional statisti
 To better visualize the changes in death rate across the various sub-district through time,
 we will plot an animated map with the same data.
 
-```{r echo=FALSE, eval=FALSE}
+```{r echo = TRUE, eval = FALSE}
 
 
 Covd_Death_Animation = tm_shape(Jakarta_Death)+ tm_fill("Death Per 10k Population", breaks = c(4, 8, 12, 16, 20, 24, 28, 32) ,palette = "Reds") +  tm_facets(along = "Date", free.coords = FALSE)
@@ -970,6 +966,7 @@ Covd_Death_Animation = tm_shape(Jakarta_Death)+ tm_fill("Death Per 10k Populatio
 tmap_animation(Covd_Death_Animation, delay = 45)
 ```
 
+*Cumulative Death Rate In Jakarta Sub-District From Mar 2020 - Jul 2021*
 
 ![](C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/Covd_Death_Animation.gif)
 
@@ -1022,7 +1019,7 @@ top_n(Jakarta_Covid_Sub_District, n=10, Covid_Case_10k) %>%
           ggplot(., aes(x=Covid_Case_10k, y=reorder(Sub_District, Covid_Case_10k),label= (Covid_Case_10k)))+
               geom_bar(stat='identity')+ 
   geom_col(fill='darksalmon') +
-  labs(title='Top 10 Sub-District With Highest Covid-19 Cases Per 10k Population',
+  labs(title='Top 10 Sub-District With Highest Covid-19 Cases Rate',
        x='No of Covid Cases',
        y='Sub-District') +
   geom_text(nudge_x=-900.85,vjust = 0.5, colour='gray23', size=2.87) +
@@ -1077,7 +1074,7 @@ top_n(Jakarta_Death_Sub_District, n=10, Death_Per_10k) %>%
           ggplot(., aes(x=Death_Per_10k, y=reorder(Sub_District, Death_Per_10k),label= (Death_Per_10k)))+
               geom_bar(stat='identity')+ 
   geom_col(fill='darksalmon') +
-  labs(title='Top 10 Sub-District With Highest Covid-19 Death Per 10k Population',
+  labs(title='Top 10 Sub-District With Highest Covid-19 Death Rate',
        x='No of Death',
        y='Sub-District') +
   geom_text(nudge_x=-7.85,vjust = 0.5, colour='gray23', size=2.87) +
@@ -1171,10 +1168,10 @@ boxmap <- function(vnam, df, mtitle, legtitle=NA, mult=1.5, palette='-RdBu') {
   tm_layout(main.title = mtitle,
             main.title.position = 'center',
             main.title.size = 1,
-            frame = TRUE,legend.title.size = 0.70, legend.position = c("left", "bottom")) +
-  tm_compass(type="4star", size = 2) + 
-  tm_scale_bar(width = 0.10)+
-  tm_grid(lwd = 0.1, alpha = 0.2) +
+            frame = TRUE,legend.title.size = 1.20, legend.text.size = 1.10, legend.position = c("left", "bottom")) +
+  tm_compass(type="4star", size = 3) + 
+  tm_scale_bar(width = 0.10, text.size = 0.90)+
+  tm_grid(lwd = 0.1, alpha = 0.2, labels.size = 1.10) +
   tm_borders(alpha = 0.5)
 }
 
@@ -1187,14 +1184,15 @@ boxmap_pts <- function(vnam, df, pointdf, mtitle, legtitle=NA, mult=1.5, palette
 }
 
 
+
 ```
 
 We will now use the function using the previous constructed dataframe, Jakarta_Covid_Cases
 to display summary statistics. 
 
-```{r echo=TRUE, eval=TRUE}
+```{r fig.width=12, fig.height=8}
 
-Covid_Cases_Boxmap <- boxmap("Cases Per 10k Population", Jakarta_Covid_Cases, mtitle="Boxmap of Jakarta Covid Cases (Mar 2020 - July 2021)")
+Covid_Cases_Boxmap <- boxmap("Cases Per 10k Population", Jakarta_Covid_Cases, mtitle="Boxmap of Jakarta Covid Cases, Mar 2020-July 2021")
 Covid_Cases_Boxmap 
 ```
 - From the boxmap, we can efficiently identify outliers which in this case highlights
@@ -1488,13 +1486,13 @@ Here is the coefficients for Local Moran’s I for Mar 2020 for the first 10 sub
 - Pr(): p-value of local Moran statistic
 
 ```{r echo=TRUE, eval=TRUE}
-head(JKT_localmoran_Mar20, 10)
+head(JKT_localmoran_Mar20, 5)
 ```
 Here is the coefficients for Local Moran’s I for Mar 2021 for the first 10 sub-district
 
 ```{r echo=TRUE, eval=TRUE}
 
-head(JKT_localmoran_Mar21, 10)
+head(JKT_localmoran_Mar21, 5)
 ```
 #### 13.3.3 Map Local Moran’s I
 
@@ -1511,11 +1509,11 @@ localmoran_map <- function(df, Date) {
           palette = "RdBu",
           title = 'Local Moran \nStatistics') +
   tm_borders(alpha = 0.5) +
-  tm_layout(panel.labels = sprintf('Local Moran\'s I of %s', Date),
-            panel.label.color = 'gray12',,legend.title.size = 0.75, legend.text.size = 0.75)+
-  tm_compass(type="4star", size = 1.1) + 
-  tm_scale_bar(width = 0.15)+
-  tm_grid(lwd = 0.1, alpha = 0.2) 
+  tm_layout(panel.labels = sprintf('Local Moran\'s I,%s', Date),
+            panel.label.color = 'gray12',,legend.title.size = 2.75, legend.text.size = 2.55, title.size=3, panel.label.size = 3)+
+  tm_compass(type="4star", size = 4) + 
+  tm_scale_bar(width = 0.15,text.size = 2.30) +
+  tm_grid(lwd = 0.1, alpha = 0.2, labels.size = 1.50) 
 }
 
 
@@ -1524,9 +1522,9 @@ localmoran_map <- function(df, Date) {
 
 Plotting the map 
 
-```{r echo=TRUE, eval=TRUE}
-moranplot_13 <- localmoran_map(JKT_localmoran_Mar20, "Mach 2020")
-moranplot_32 <- localmoran_map(JKT_localmoran_Mar21, "March 2021")
+```{r fig.width=20, fig.height=15}
+moranplot_13 <- localmoran_map(JKT_localmoran_Mar20, "Mar 2020")
+moranplot_32 <- localmoran_map(JKT_localmoran_Mar21, "Mar 2021")
 tmap_arrange(moranplot_13, moranplot_32)
 
 ```
@@ -1549,19 +1547,19 @@ pvalue_map <- function(df, Date) {
   tm_fill(col = "Pr.z...0.", 
           breaks=c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
           palette = "-Blues",
-          title = 'P-values')+
-  tm_compass(type="4star", size = 1.1) + 
-  tm_scale_bar(width = 0.15)+
-  tm_grid(lwd = 0.1, alpha = 0.2)+
+          title = 'P-values', title.size=2.8)+
+  tm_compass(type="4star", size = 4) + 
+  tm_scale_bar(width = 0.15,text.size = 2.30)+
+  tm_grid(lwd = 0.1, alpha = 0.2,labels.size=2.00)+
   tm_borders(alpha = 0.5) +
-  tm_layout(panel.labels = sprintf('Local Moran\'s I p-values of %s', Date),
-            panel.label.color = 'gray12', legend.outside = FALSE,legend.title.size = 0.75, legend.text.size = 0.55)
+  tm_layout(panel.labels = sprintf('Local Moran\'s I p-values,%s', Date),
+            panel.label.color = 'gray12', legend.outside = FALSE,legend.title.size = 2.75, legend.text.size = 2.55, panel.label.size = 3)
 }
 ```
 
 Plotting the map
 
-```{r echo=TRUE, eval=TRUE}
+```{r fig.width=20, fig.height=30}
 tmap_arrange(moranplot_13, pvalue_map(JKT_localmoran_Mar20, "March 2020"),
              moranplot_32, pvalue_map(JKT_localmoran_Mar21, "March 2021"),
              ncol=2)
@@ -1575,14 +1573,14 @@ March 2021 around Karet Semmangi
 - These values are statistically significant at 99.9% confidence level, with p-values of less than 0.001 indicated 
 by the corresponding areas that are in darkest shade of blue at the p-value plot.
 
-- From the result, we can onserve that there is significant and positive local autocorrelation for COVID-19 case per 10k population at these bordering sub-district, suggesting a grouping of sub-district with COVID-19 rates that are higher than average for these bordering municipalities during March 2020.
+- From the result, we can onserve that there is significant and positive local autocorrelation for COVID-19 case per 10k population at these bordering sub-district, suggesting a grouping of sub-district with COVID-19 rates that are higher than average for these bordering sub-districts during March 2020.
 
 
 *March 2021*
 
 One year after onset of COVID-19, sub-district with positive and relatively higher Moran’s I values are statistically significant at 99.9% confidence level (p-value less than 0.001).
 
-There is therefore significant and positive local autocorrelation for COVID-19 cases per 10k population rate at sub-district in March 2021, suggesting that this group of sub-district are a cluster for COVID-19 at e-week 32, with COVID-19 rates that are higher than average.
+There is therefore significant and positive local autocorrelation for COVID-19 cases per 10k population rate at sub-district in March 2021, suggesting that this group of sub-district are a cluster for COVID-19 at March 2021, with COVID-19 rates that are higher than average.
 
 
 
@@ -1592,7 +1590,23 @@ pagedown::chrome_print("take-home-exercise-1.html")
 ```
 
 
-## 14. Relative Risk Map
+## 14. Conclusion
+
+Through the different analysis, the following observations were made:
+
+*Spatial-temporal patterns of Covid-19 Cases and how they change over time.*
+
+-	COVID-19 cases seem to spread outwards to the neighbouring sub-district with time as seen from the time-series choropleth map of Covid-19 rate 
+
+-	Significant and positive local autocorrelation for COVID-19 case per 10k population at bordering sub-district, suggesting a grouping of sub-district with COVID-19 rates that are higher than average for bordering sub-districts during March 2020.
+
+-	Significant and positive local autocorrelation for COVID-19 cases per 10k population rate at sub-district in March 2021, suggesting that this group of sub-district are a cluster for COVID-19 at March 2021, with COVID-19 rates that are higher than average.
+
+
+*Sub-districts with relatively higher number of confirmed cases*
+
+-  In descending order of Covid rate per 10k population: Gambir, Senayan and Kuningan Timur 
+
 
 ```{r echo=FALSE, eval=FALSE}
 
