@@ -55,7 +55,7 @@ In this analysis, the following dataset were used:
 
 Data <- c("Jakarta COVID-19 Data", "DKI Jarkata shapefile")
 Format <- c("XLSX", "Shapefile")
-Description <- c("Daily COVID-19 data of DKI Jakarta compiled month between March 2020 to July 2021", "Jakarta sub-district")
+Description <- c("Daily COVID-19 data of DKI Jakarta compiled monthly between March 2020 to July 2021", "Jakarta sub-district")
 Source <- c("[Open Data Covid-19 Provinsi DKI](https://riwayat-file-covid-19-dki-jakarta-jakartagis.hub.arcgis.com/)",
 "[Indonesia Geospatial Data](https://www.indonesia-geospasial.com/p/sitemap.html)")
 
