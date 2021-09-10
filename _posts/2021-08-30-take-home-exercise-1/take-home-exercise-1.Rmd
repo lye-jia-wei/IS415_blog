@@ -614,8 +614,8 @@ Afterwhich, we will read the RDS.
 
 ```{r echo = TRUE, eval = FALSE}
 
-Covid_DF <- read_rds("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/Covid_DF.rds")
-DKI_Jakarta <- read_rds("C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/DKI_Jakarta.rds")
+Covid_DF <- read_rds("/data/rds/Covid_DF.rds")
+DKI_Jakarta <- read_rds("/data/rds/DKI_Jakarta.rds")
 
 ```
 
@@ -836,7 +836,7 @@ tmap_animation(Covd_Cases_Animation,file="C:/Users/User/Desktop/IS415/lye-jia-we
 ```
 *Cumulative Confirmed Cases per 10k population In Jakarta Sub-District From Mar 2020 - Jul 2021*
 
-![](C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/Covid_Case_Animation.gif)
+![](C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/AnimatedMap/Covid_Case_Animation.gif)
 
 
 
@@ -1006,7 +1006,7 @@ tmap_animation(Covd_Death_Animation, delay = 45)
 
 *Cumulative Death Rate In Jakarta Sub-District From Mar 2020 - Jul 2021*
 
-![](C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/Covd_Death_Animation.gif)
+![](C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/AnimatedMap/Covd_Death_Animation.gif)
 
 ## 12. Analytical Map
 
@@ -1312,7 +1312,98 @@ tmap_mode("plot")+
 
 - In line with earlier observation, CFR appears to be generally higher in Central Jakarta region
 
+### 12.4 Excess Risk Map
 
+A commonly used notion in demography and public health analysis is the concept 
+of a standardized mortality rate (SMR), sometimes also referred to as relative 
+risk or excess risk. The idea is to compare the observed mortality rate to a 
+national (or regional) standard. More specifically, the observed number of 
+events is compared to the number of events that would be expected had a reference 
+risk been applied.
+
+In our example, all the COVID-19 deaths in the sub-district over sub-district total population size. Formally, this is expressed as:
+
+$$SMR= \frac{Number \ of \ observed \ deaths}{Number\ of\ expected\ deaths}$$
+
+
+which yields the expected number of events for each area i as:
+
+
+$$E_{i}=π∗P_{i}$$
+
+The relative risk then follows as the ratio of the observed number of events 
+(e.g., Covid cases) over the expected number:
+
+$$SMR_{i} = \frac{O_{i}}{E_{i}}$$
+
+
+We start by calculating the reference rate, which is just the sum of events over the sum of the population.
+
+```{r echo=TRUE, eval=TRUE}
+
+
+
+sum_observed <- sum(Covid_DF$Cases)
+sum_population <- sum(DKI_Jakarta$Total_Population)
+p_i <- sum_observed / sum_population
+
+```
+
+Next we calculate the expected number of events for each sub-district based on the reference rate for the whole Jakarta and the population for each sub-district.
+
+
+```{r echo=TRUE, eval=TRUE}
+E_i <- p_i * DKI_Jakarta$Total_Population
+```
+
+We will divide the actual count by the expected count to get the relative risk rate. This ratio will show us which sub-district have a higher than expected number of Covid-19 cases, and which sub-district have a lower than expected count.
+
+```{r echo=TRUE, eval=TRUE}
+Covid_DF$smr <- Covid_DF$Cases / E_i
+```
+
+Next, we will group by date and sub-district and do a left_join 
+using common identifier 'Sub-District' and omit the na fields and convert into
+sf. 
+
+```{r echo=TRUE, eval=TRUE}
+Covid_DF <- Covid_DF %>% group_by(Date, Sub_District)
+
+Jakarta_Covid_smr<- Covid_DF %>%
+  left_join(DKI_Jakarta, by=c("Sub_District"="Sub_District"))
+
+Jakarta_Covid_smr <- na.omit(Jakarta_Covid_smr,c("smr"))
+
+Jakarta_Covid_smr<- st_as_sf(Jakarta_Covid_smr)
+
+Jakarta_Covid_smr<- Jakarta_Covid_smr  %>% ungroup()
+
+```
+
+We will then filter to the most recent month which is July 2021
+
+```{r echo=TRUE, eval=TRUE}
+Jakarta_Covid_smr<- Jakarta_Covid_smr %>% filter(Date == "2021-07-31")
+
+  
+tm_shape(Jakarta_Covid_smr) +
+     tm_fill("smr",title="Excess risk", breaks=c(-100,.25,.5,1,2,4,1000),labels = c("<.25", ".25 - .50", ".50 - 1.00","1.00 - 2.00", "2.00 - 4.00", "> 4.00" ), palette = "OrRd")  +
+  tm_layout(legend.show = TRUE, 
+            main.title.size = 1,main.title = "Excess Risk Rate In Jakarta Sub-District (July 2021)", legend.outside = FALSE,legend.width = 0.70, legend.text.size = 0.80, legend.title.size = 1.00, legend.position = c("left", "bottom"))+
+  tm_compass(type="4star", size = 0.9) + 
+  tm_scale_bar(width = 0.09,text.size = 0.60)+
+  tm_grid(lwd = 0.1, alpha = 0.2,labels.size=0.70) +
+  tm_borders(alpha = 0.5)
+
+
+
+```
+- In the excess risk map, pale pink sub-district s will indicate a risk lower than Jakarta average, or SMR<1. Red counties indicate a risk higher than the Jakarta average, or SMR>1.
+
+- From the excess risk map, we can observe that generally sub-district that are
+further away from Central Jakarta tends to have higher SMR. Sub-district that
+are at the fringe of Jakarta also appears to have significant higher SMR above 1
+with the exception of North Jakarta
 
 ## 13. Localised Geospatial Statistic
 
@@ -1661,6 +1752,18 @@ Through the different analysis, the following observations were made:
 
 -  In descending order of Covid rate per 10k population: Gambir, Senayan and Kuningan Timur 
 
+## 15. References
+
+- [Standardized Mortality Rate (SMR)](https://spatialanalysis.github.io/lab_tutorials/Rate_mapping.html#spatially-extensive-and-intensive-variables)
+
+- [Jakarta Covid-19 Timeline](https://corona.jakarta.go.id/en/artikel/linimasa-kebijakan-penanganan-pandemi-covid-19-di-jakarta)
+
+- [Transmission Method of Covid-19](https://www.straitstimes.com/singapore/how-covid-19-led-to-spores-clusters-airborne-droplet-or-surface-transmission)
+
+- [Past Covid-19 Analysis](https://rpubs.com/xiaorongw/IS415_Take-home_Ex02)
+
+- [Case Mortality Rate](https://www.who.int/news-room/commentaries/detail/estimating-mortality-from-covid-19)
+
+- [Delta Variant in Jakarta](https://indonesien.ahk.de/infothek/news/news-details/covid-19-developments-in-indonesia)
 
 
-- The End - 
