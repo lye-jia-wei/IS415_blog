@@ -55,7 +55,7 @@ In this analysis, the following dataset were used:
 
 Data <- c("Jakarta COVID-19 Data", "DKI Jarkata shapefile")
 Format <- c("XLSX", "Shapefile")
-Description <- c("Daily COVID-19 data of DKI Jakarta month between March 2020 to July 2021", "Jakarta sub-district")
+Description <- c("Daily COVID-19 data of DKI Jakarta compiled month between March 2020 to July 2021", "Jakarta sub-district")
 Source <- c("[Open Data Covid-19 Provinsi DKI](https://riwayat-file-covid-19-dki-jakarta-jakartagis.hub.arcgis.com/)",
 "[Indonesia Geospatial Data](https://www.indonesia-geospasial.com/p/sitemap.html)")
 
@@ -664,7 +664,7 @@ Covid Cases Per 10k Population will be visualised instead of the number of COVID
 ##### 11.1.1 Data preparation
 
 The following code chunk will use left_join() of dplyr to join the geographical
-data (DKI_Jakarta) and attribute table (Covid_DF) using sub-district e.g."Sub_District" as the common identifier.
+data (DKI_Jakarta) and attribute table (Covid_DF) using sub-district as the common identifier.
 
 
 Following which, it will be group by sub-district and date as we are interested
@@ -800,12 +800,12 @@ compared to other sub-district.
 ##### 11.1.3 Time-series choropleth map of COVID-19 Rates
 
 
-By using tm group by date in TM_FACETS, we can see the spatial-temporal patterns 
+For this segment, we hope to see the spatial-temporal patterns 
 of COVID-19 case in DKI Jakarta between March 2020 to July 2021.
 
 Again, tm_shape() is used to define the input data (Jakarta_Covid_Cases) and 
 tm_fill() is used to illustrate the monthly cumulative confirmed cases at sub-district level.
-tm_facet() will be used to specify facets (small multiples) which will group
+Tm_facet() will be used to specify facets (small multiples) which will group
 the data by time period of the COVID-19 case rate. 
 
 ```{r echo = TRUE, eval = FALSE}
@@ -891,7 +891,7 @@ rate at sub-district level.
 
 
 The following code chunk will use left_join() of dplyr to join the geographical
-data (DKI_Jakarta) and attribute table (Covid_DF) using sub-district e.g."Sub_District" as the common identifier.
+data (DKI_Jakarta) and attribute table (Covid_DF) using sub-district as the common identifier.
 
 
 Following which, it will be group by sub-district and date and we will calculate
@@ -926,11 +926,6 @@ Jakarta_Death <- st_as_sf(Jakarta_Death)
 
 
 ##### 11.2.2 Plotting Choropleth Map of Monthly Cumulative Death
-
-In the code chunk below, tm_shape() is used to define the input data 
-(Jakarta_Death) and tm_fill() is used to illustrate the monthly cumulative
-confirmed cases at sub-district level. 
-
 
 
 *Classification Method*
@@ -967,6 +962,7 @@ with the previous map, we will also filter the date to be March 2020.
 
 tm_shape() is used to define the input data (Jakarta_Death) and 
 tm_fill() is used to illustrate the monthly cumulative death at sub-district level.
+
 
 ```{r echo = TRUE, eval = FALSE}
 Jakarta_Death_March <- Jakarta_Death %>% filter(Date == "2020-03-31")
@@ -1012,7 +1008,7 @@ about 2 to 4 Covid death in March 2020.
 ##### 11.2.3 Time-series choropleth map of COVID-19 Rates
 
 
-By using tm_facet() and grouping by date in TM_FACETS, we can see the spatial-temporal patterns 
+By using tm_facet() and grouping by date in tm_facets(), we can see the spatial-temporal patterns 
 of COVID-19 death in DKI Jakarta between March 2020 to July 2021.
 
 ```{r echo = TRUE, eval = FALSE}
@@ -1102,6 +1098,8 @@ and death rate from March 2020 to July 2021.
 
 ##### 12.1.1.1 Combining aspatial and spatial dataframe
 
+First, we will filter to the most recent date which is July 2021.
+
 Again, we will combine the Covid_DF and DKI_Jakarta data frame by common identifier 'Sub_District'
 using the left_join() of dplyr. We will use the aforementioned formula to
 calculate the Covid cases per 10,000 population and it will be named as 'Covid_Case_10K'.
@@ -1110,15 +1108,15 @@ Note that this time round, we will only group by sub-district as we are interest
 to find out the overall case rate at sub-district level.
 
 ```{r echo=TRUE, eval=TRUE}
-
-Jakarta_Covid_Sub_District <- Covid_DF %>%
+Covid_DF_2<- Covid_DF %>% filter(Date == "2021-07-31")
+Jakarta_Covid_Sub_District <- Covid_DF_2 %>%
   left_join(DKI_Jakarta, by=c("Sub_District"="Sub_District")) %>%
   group_by(Sub_District) %>% 
   dplyr::summarise(`Covid_Case_10k` =((sum(Cases) / (Total_Population ))*10000)) %>% ungroup()
 
 ```
 
-##### 12.1.1.2 Dropping duplicated Rows and Rounding Up
+##### 12.1.1.2 Dropping Duplicated Rows and Rounding Up
 
 Next, we will get drop the duplicated row as well as 
 to round the result to nearest number.
@@ -1141,10 +1139,10 @@ top_n(Jakarta_Covid_Sub_District, n=10, Covid_Case_10k) %>%
           ggplot(., aes(x=Covid_Case_10k, y=reorder(Sub_District, Covid_Case_10k),label= (Covid_Case_10k)))+
               geom_bar(stat='identity')+ 
   geom_col(fill='darksalmon') +
-  labs(title='Top 10 Sub-District With Highest Covid-19 Cases Rate',
-       x='No of Covid Cases',
+  labs(title='Top 10 Sub-District With Highest Covid-19 Case Rate',
+       x='Cases per 10k',
        y='Sub-District') +
-  geom_text(nudge_x=-900.85,vjust = 0.5, colour='gray23', size=2.87) +
+  geom_text(nudge_x=-115.85,vjust = 0.5, colour='gray23', size=2.87) +
   theme_minimal()
 
 ```
@@ -1166,7 +1164,7 @@ We will use the same formula to calculate the Covid death per 10,000 population 
 
 ```{r echo=TRUE, eval=TRUE}
 
-Jakarta_Death_Sub_District <- Covid_DF %>%
+Jakarta_Death_Sub_District <- Covid_DF_2 %>%
   left_join(DKI_Jakarta, by=c("Sub_District"="Sub_District")) %>%
   group_by(Sub_District) %>% 
   dplyr::summarise(Death_Per_10k = ((sum(Death) / (Total_Population ))*10000)) %>% ungroup()
@@ -1195,10 +1193,10 @@ top_n(Jakarta_Death_Sub_District, n=10, Death_Per_10k) %>%
           ggplot(., aes(x=Death_Per_10k, y=reorder(Sub_District, Death_Per_10k),label= (Death_Per_10k)))+
               geom_bar(stat='identity')+ 
   geom_col(fill='darksalmon') +
-  labs(title='Top 10 Sub-District With Highest Covid-19 Death Rate',
-       x='No of Death',
+  labs(title='Top 10 Sub-District With Highest Covid-19 Death',
+       x='Death per 10k',
        y='Sub-District') +
-  geom_text(nudge_x=-7.85,vjust = 0.5, colour='gray23', size=2.87) +
+  geom_text(nudge_x=-0.85,vjust = 0.5, colour='gray23', size=2.87) +
   theme_minimal() + theme(plot.title = element_text(size=10))
 
 
@@ -1214,7 +1212,7 @@ top_n(Jakarta_Death_Sub_District, n=10, Death_Per_10k) %>%
 
 ### 12.2 Box Map 
 
-A box map will be used to visualise covid cases spatially across different sub_district
+A box map will be used to visualise covid cases spatially across different sub-district
 in Jakarta. 
 
 A customised classification scheme for the choropleth map will be constructed 
@@ -1368,7 +1366,8 @@ Case Fatality Rate using summarise function of dplyr.
 
 Merged_DF <- Covid_DF %>% select('Cases', 'Sub_District','Death')
 
-Merged_DF<- left_join(DKI_Jakarta, Merged_DF, by= c("Sub_District" = "Sub_District")) %>% group_by (Sub_District) %>% dplyr::summarise(`Case Fatality Rate` = (sum(Death) / (sum(Cases))) *100) %>% ungroup()
+Merged_DF<- left_join(DKI_Jakarta, Merged_DF, 
+                      by= c("Sub_District" = "Sub_District")) %>% group_by (Sub_District) %>% dplyr::summarise(`Case Fatality Rate` = (sum(Death) / (sum(Cases))) *100) %>% ungroup()
 
 
 ```
@@ -1487,7 +1486,7 @@ tm_shape(Jakarta_Covid_smr) +
 
 ```
 
-- In the excess risk map, pale pink sub-district s will indicate a risk lower than Jakarta average, or SMR<1. Red counties indicate a risk higher than the Jakarta average, or SMR>1.
+- In the excess risk map, pale pink sub-district s will indicate a risk lower than Jakarta average, or SMR<1. Red sub-district indicate a risk higher than the Jakarta average, or SMR>1.
 
 - From the excess risk map, we can observe that a few sub-district in Central Jakarta region has lower excess risk level (<0.50)
 compared to other region. A possible explanation for this observation may be due to the fact that the 6 main COVID-19 specialized 
@@ -1673,7 +1672,7 @@ plot(wm_knn9, coords, pch = 19, cex = 0.6, add = TRUE, col= "red")
 Local Moran’s I (a local spatial autocorrelation indicator - LISA) will be 
 utilised to detect spatial clusters of sub-district with high or low COVID-19 
 cases per 10k population rates, and detect outliers. The analysis will be 
-conducted from Mar 2020 to Mar 2021to better analyse and understand spatial 
+conducted from Mar 2020 to Mar 2021 to better analyse and understand spatial 
 clusters and outliers across time.
 
 Interpretation of local Moran’s I values
@@ -1857,7 +1856,10 @@ Through the different analysis, the following observations were made:
 
 *Sub-districts with relatively higher number of confirmed cases*
 
--  In descending order of Covid rate per 10k population: Gambir, Senayan and Kuningan Timur 
+-  In descending order of Covid rate per 10k population: Gambir, Senayan and Gunung were found to be the sub-district most affected by COVID-19 
+
+- Through our Standardized Mortality Rate geospatial analysis, sub-district in North Jakarta appears to be experiencing
+higher excess risk of mostly >2 compared to other region in Jakarta which may serve as a warning for local public health authority
 
 ## 15. References
 

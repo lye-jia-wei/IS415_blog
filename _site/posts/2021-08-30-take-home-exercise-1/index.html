@@ -2155,9 +2155,9 @@ Take-home Exercise
 <table>
 <colgroup>
 <col style="width: 10%" />
-<col style="width: 34%" />
+<col style="width: 37%" />
 <col style="width: 4%" />
-<col style="width: 49%" />
+<col style="width: 47%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -2170,7 +2170,7 @@ Take-home Exercise
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">Jakarta COVID-19 Data</td>
-<td style="text-align: left;">Daily COVID-19 data of DKI Jakarta month between March 2020 to July 2021</td>
+<td style="text-align: left;">Daily COVID-19 data of DKI Jakarta compiled month between March 2020 to July 2021</td>
 <td style="text-align: left;">XLSX</td>
 <td style="text-align: left;"><a href="https://riwayat-file-covid-19-dki-jakarta-jakartagis.hub.arcgis.com/">Open Data Covid-19 Provinsi DKI</a></td>
 </tr>
@@ -3100,7 +3100,7 @@ Projected CRS: DGN95 / Indonesia TM-3 zone 54.1
 <p>Choropleth maps visualising the spatial distribution of COVID-19 rates across sub_district in Jakarta, will be plotted across time (March 2020 to July 2021). Covid Cases Per 10k Population will be visualised instead of the number of COVID-19 cases to standardised population sizes for a more holistic comparison.</p>
 <h4 id="cumulative-confirmed-cases">11.1 Cumulative Confirmed Cases</h4>
 <h5 id="data-preparation">11.1.1 Data preparation</h5>
-<p>The following code chunk will use left_join() of dplyr to join the geographical data (DKI_Jakarta) and attribute table (Covid_DF) using sub-district e.g.“Sub_District” as the common identifier.</p>
+<p>The following code chunk will use left_join() of dplyr to join the geographical data (DKI_Jakarta) and attribute table (Covid_DF) using sub-district as the common identifier.</p>
 <p>Following which, it will be group by sub-district and date as we are interested to see the change in COVID-19 case rate over time at sub-district level.</p>
 <p>Finally, the cumulative confirmed cases per 10,0000 population will be calculated using summarise function of dplyr using the following formula:</p>
 <p><span class="math display">\[ Monthly\ Cumulative\ Confirmed\ Cases\  = 
@@ -3193,8 +3193,8 @@ legend.is.portrait <span class='op'>=</span> <span class='cn'>TRUE</span><span c
 <li><p>It is also interesting to note that sub_district near Senayan such as Gelora and Karet Semmangi, Rawa Barat also appears to have a slightly higher COVID-19 rate per 10k population compared to other sub-district.</p></li>
 </ul>
 <h5 id="time-series-choropleth-map-of-covid-19-rates">11.1.3 Time-series choropleth map of COVID-19 Rates</h5>
-<p>By using tm group by date in TM_FACETS, we can see the spatial-temporal patterns of COVID-19 case in DKI Jakarta between March 2020 to July 2021.</p>
-<p>Again, tm_shape() is used to define the input data (Jakarta_Covid_Cases) and tm_fill() is used to illustrate the monthly cumulative confirmed cases at sub-district level. tm_facet() will be used to specify facets (small multiples) which will group the data by time period of the COVID-19 case rate.</p>
+<p>For this segment, we hope to see the spatial-temporal patterns of COVID-19 case in DKI Jakarta between March 2020 to July 2021.</p>
+<p>Again, tm_shape() is used to define the input data (Jakarta_Covid_Cases) and tm_fill() is used to illustrate the monthly cumulative confirmed cases at sub-district level. Tm_facet() will be used to specify facets (small multiples) which will group the data by time period of the COVID-19 case rate.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>tm_shape</span><span class='op'>(</span><span class='va'>Jakarta_Covid_Cases</span><span class='op'>)</span> <span class='op'>+</span>
@@ -3240,7 +3240,7 @@ legend.is.portrait <span class='op'>=</span> <span class='cn'>TRUE</span><span c
 <h4 id="cumulative-covid-19-death">11.2 Cumulative Covid-19 Death</h4>
 <h5 id="data-preparation-1">11.2.1 Data Preparation</h5>
 <p>After understanding the COVID-19 case rate, we will now look into the death rate at sub-district level.</p>
-<p>The following code chunk will use left_join() of dplyr to join the geographical data (DKI_Jakarta) and attribute table (Covid_DF) using sub-district e.g.“Sub_District” as the common identifier.</p>
+<p>The following code chunk will use left_join() of dplyr to join the geographical data (DKI_Jakarta) and attribute table (Covid_DF) using sub-district as the common identifier.</p>
 <p>Following which, it will be group by sub-district and date and we will calculate the cumulative death per 10,0000 population using summarise function of dplyr with the following formula:</p>
 <p><span class="math display">\[ Monthly\ Cumulative\ Confirmed\ Death\  = 
 \frac{Total\ no\ of\ Covid-19\ Death\ at\ Sub-District\ 
@@ -3261,7 +3261,6 @@ Level}{Total\ Population\ of\ the\ Sub-District} *\ 10,000\]</span></p>
 </div>
 </div>
 <h5 id="plotting-choropleth-map-of-monthly-cumulative-death">11.2.2 Plotting Choropleth Map of Monthly Cumulative Death</h5>
-<p>In the code chunk below, tm_shape() is used to define the input data (Jakarta_Death) and tm_fill() is used to illustrate the monthly cumulative confirmed cases at sub-district level.</p>
 <p><em>Classification Method</em></p>
 <p>Custom breaks will have to be specified explicitly to construct the classification scheme for Covid Death Per 10k Population.</p>
 <p>To guide the specification of breakpoints, descriptive statistics of Covid Death Per 10k Population across months is first computed and studied.</p>
@@ -3319,7 +3318,7 @@ legend.is.portrait <span class='op'>=</span> <span class='cn'>TRUE</span><span c
 <li>From the map, it can be seen that Gondangdia and Senayan are the only 2 sub-district with about 2 to 4 Covid death in March 2020.</li>
 </ul>
 <h5 id="time-series-choropleth-map-of-covid-19-rates-1">11.2.3 Time-series choropleth map of COVID-19 Rates</h5>
-<p>By using tm_facet() and grouping by date in TM_FACETS, we can see the spatial-temporal patterns of COVID-19 death in DKI Jakarta between March 2020 to July 2021.</p>
+<p>By using tm_facet() and grouping by date in tm_facets(), we can see the spatial-temporal patterns of COVID-19 death in DKI Jakarta between March 2020 to July 2021.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>tm_shape</span><span class='op'>(</span><span class='va'>Jakarta_Death</span><span class='op'>)</span> <span class='op'>+</span>
@@ -3362,18 +3361,20 @@ legend.is.portrait <span class='op'>=</span> <span class='cn'>TRUE</span><span c
 <p>To better understand specific sub-district which has been affected by COVID-19 the most in terms of infection rate and death rate, we will now proceed to plot bar chart that shows the top 10 district with highest Covid-19 case rate and death rate from March 2020 to July 2021.</p>
 <h4 id="bar-chart-of-top-10-sub-district-with-highest-covid-19-cases-per-10000-population">12.1.1 Bar Chart of Top 10 Sub-District With Highest Covid-19 Cases Per 10,000 Population</h4>
 <h5 id="combining-aspatial-and-spatial-dataframe">12.1.1.1 Combining aspatial and spatial dataframe</h5>
+<p>First, we will filter to the most recent date which is July 2021.</p>
 <p>Again, we will combine the Covid_DF and DKI_Jakarta data frame by common identifier ‘Sub_District’ using the left_join() of dplyr. We will use the aforementioned formula to calculate the Covid cases per 10,000 population and it will be named as ‘Covid_Case_10K’.</p>
 <p>Note that this time round, we will only group by sub-district as we are interested to find out the overall case rate at sub-district level.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>Jakarta_Covid_Sub_District</span> <span class='op'>&lt;-</span> <span class='va'>Covid_DF</span> <span class='op'>%&gt;%</span>
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>Covid_DF_2</span><span class='op'>&lt;-</span> <span class='va'>Covid_DF</span> <span class='op'>%&gt;%</span> <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>Date</span> <span class='op'>==</span> <span class='st'>"2021-07-31"</span><span class='op'>)</span>
+<span class='va'>Jakarta_Covid_Sub_District</span> <span class='op'>&lt;-</span> <span class='va'>Covid_DF_2</span> <span class='op'>%&gt;%</span>
   <span class='fu'>left_join</span><span class='op'>(</span><span class='va'>DKI_Jakarta</span>, by<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Sub_District"</span><span class='op'>=</span><span class='st'>"Sub_District"</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
   <span class='fu'>group_by</span><span class='op'>(</span><span class='va'>Sub_District</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
   <span class='fu'>dplyr</span><span class='fu'>::</span><span class='fu'><a href='https://dplyr.tidyverse.org/reference/summarise.html'>summarise</a></span><span class='op'>(</span>`Covid_Case_10k` <span class='op'>=</span><span class='op'>(</span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='va'>Cases</span><span class='op'>)</span> <span class='op'>/</span> <span class='op'>(</span><span class='va'>Total_Population</span> <span class='op'>)</span><span class='op'>)</span><span class='op'>*</span><span class='fl'>10000</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>ungroup</span><span class='op'>(</span><span class='op'>)</span>
 </code></pre>
 </div>
 </div>
-<h5 id="dropping-duplicated-rows-and-rounding-up">12.1.1.2 Dropping duplicated Rows and Rounding Up</h5>
+<h5 id="dropping-duplicated-rows-and-rounding-up">12.1.1.2 Dropping Duplicated Rows and Rounding Up</h5>
 <p>Next, we will get drop the duplicated row as well as to round the result to nearest number.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -3391,10 +3392,10 @@ legend.is.portrait <span class='op'>=</span> <span class='cn'>TRUE</span><span c
           <span class='fu'>ggplot</span><span class='op'>(</span><span class='va'>.</span>, <span class='fu'>aes</span><span class='op'>(</span>x<span class='op'>=</span><span class='va'>Covid_Case_10k</span>, y<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/stats/reorder.factor.html'>reorder</a></span><span class='op'>(</span><span class='va'>Sub_District</span>, <span class='va'>Covid_Case_10k</span><span class='op'>)</span>,label<span class='op'>=</span> <span class='op'>(</span><span class='va'>Covid_Case_10k</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span><span class='op'>+</span>
               <span class='fu'>geom_bar</span><span class='op'>(</span>stat<span class='op'>=</span><span class='st'>'identity'</span><span class='op'>)</span><span class='op'>+</span> 
   <span class='fu'>geom_col</span><span class='op'>(</span>fill<span class='op'>=</span><span class='st'>'darksalmon'</span><span class='op'>)</span> <span class='op'>+</span>
-  <span class='fu'>labs</span><span class='op'>(</span>title<span class='op'>=</span><span class='st'>'Top 10 Sub-District With Highest Covid-19 Cases Rate'</span>,
-       x<span class='op'>=</span><span class='st'>'No of Covid Cases'</span>,
+  <span class='fu'>labs</span><span class='op'>(</span>title<span class='op'>=</span><span class='st'>'Top 10 Sub-District With Highest Covid-19 Case Rate'</span>,
+       x<span class='op'>=</span><span class='st'>'Cases per 10k'</span>,
        y<span class='op'>=</span><span class='st'>'Sub-District'</span><span class='op'>)</span> <span class='op'>+</span>
-  <span class='fu'>geom_text</span><span class='op'>(</span>nudge_x<span class='op'>=</span><span class='op'>-</span><span class='fl'>900.85</span>,vjust <span class='op'>=</span> <span class='fl'>0.5</span>, colour<span class='op'>=</span><span class='st'>'gray23'</span>, size<span class='op'>=</span><span class='fl'>2.87</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'>geom_text</span><span class='op'>(</span>nudge_x<span class='op'>=</span><span class='op'>-</span><span class='fl'>115.85</span>,vjust <span class='op'>=</span> <span class='fl'>0.5</span>, colour<span class='op'>=</span><span class='st'>'gray23'</span>, size<span class='op'>=</span><span class='fl'>2.87</span><span class='op'>)</span> <span class='op'>+</span>
   <span class='fu'>theme_minimal</span><span class='op'>(</span><span class='op'>)</span>
 </code></pre>
 </div>
@@ -3409,7 +3410,7 @@ legend.is.portrait <span class='op'>=</span> <span class='cn'>TRUE</span><span c
 <p>Again, we will combine the Covid_DF and DKI_Jakarta data frame by common identifier ‘Sub_District’. We will use the same formula to calculate the Covid death per 10,000 population and it will be named as ‘Death_Per_10K’.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>Jakarta_Death_Sub_District</span> <span class='op'>&lt;-</span> <span class='va'>Covid_DF</span> <span class='op'>%&gt;%</span>
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>Jakarta_Death_Sub_District</span> <span class='op'>&lt;-</span> <span class='va'>Covid_DF_2</span> <span class='op'>%&gt;%</span>
   <span class='fu'>left_join</span><span class='op'>(</span><span class='va'>DKI_Jakarta</span>, by<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Sub_District"</span><span class='op'>=</span><span class='st'>"Sub_District"</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
   <span class='fu'>group_by</span><span class='op'>(</span><span class='va'>Sub_District</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
   <span class='fu'>dplyr</span><span class='fu'>::</span><span class='fu'><a href='https://dplyr.tidyverse.org/reference/summarise.html'>summarise</a></span><span class='op'>(</span>Death_Per_10k <span class='op'>=</span> <span class='op'>(</span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='va'>Death</span><span class='op'>)</span> <span class='op'>/</span> <span class='op'>(</span><span class='va'>Total_Population</span> <span class='op'>)</span><span class='op'>)</span><span class='op'>*</span><span class='fl'>10000</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>ungroup</span><span class='op'>(</span><span class='op'>)</span>
@@ -3434,10 +3435,10 @@ legend.is.portrait <span class='op'>=</span> <span class='cn'>TRUE</span><span c
           <span class='fu'>ggplot</span><span class='op'>(</span><span class='va'>.</span>, <span class='fu'>aes</span><span class='op'>(</span>x<span class='op'>=</span><span class='va'>Death_Per_10k</span>, y<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/stats/reorder.factor.html'>reorder</a></span><span class='op'>(</span><span class='va'>Sub_District</span>, <span class='va'>Death_Per_10k</span><span class='op'>)</span>,label<span class='op'>=</span> <span class='op'>(</span><span class='va'>Death_Per_10k</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span><span class='op'>+</span>
               <span class='fu'>geom_bar</span><span class='op'>(</span>stat<span class='op'>=</span><span class='st'>'identity'</span><span class='op'>)</span><span class='op'>+</span> 
   <span class='fu'>geom_col</span><span class='op'>(</span>fill<span class='op'>=</span><span class='st'>'darksalmon'</span><span class='op'>)</span> <span class='op'>+</span>
-  <span class='fu'>labs</span><span class='op'>(</span>title<span class='op'>=</span><span class='st'>'Top 10 Sub-District With Highest Covid-19 Death Rate'</span>,
-       x<span class='op'>=</span><span class='st'>'No of Death'</span>,
+  <span class='fu'>labs</span><span class='op'>(</span>title<span class='op'>=</span><span class='st'>'Top 10 Sub-District With Highest Covid-19 Death'</span>,
+       x<span class='op'>=</span><span class='st'>'Death per 10k'</span>,
        y<span class='op'>=</span><span class='st'>'Sub-District'</span><span class='op'>)</span> <span class='op'>+</span>
-  <span class='fu'>geom_text</span><span class='op'>(</span>nudge_x<span class='op'>=</span><span class='op'>-</span><span class='fl'>7.85</span>,vjust <span class='op'>=</span> <span class='fl'>0.5</span>, colour<span class='op'>=</span><span class='st'>'gray23'</span>, size<span class='op'>=</span><span class='fl'>2.87</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'>geom_text</span><span class='op'>(</span>nudge_x<span class='op'>=</span><span class='op'>-</span><span class='fl'>0.85</span>,vjust <span class='op'>=</span> <span class='fl'>0.5</span>, colour<span class='op'>=</span><span class='st'>'gray23'</span>, size<span class='op'>=</span><span class='fl'>2.87</span><span class='op'>)</span> <span class='op'>+</span>
   <span class='fu'>theme_minimal</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>+</span> <span class='fu'>theme</span><span class='op'>(</span>plot.title <span class='op'>=</span> <span class='fu'>element_text</span><span class='op'>(</span>size<span class='op'>=</span><span class='fl'>10</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
@@ -3449,7 +3450,7 @@ legend.is.portrait <span class='op'>=</span> <span class='cn'>TRUE</span><span c
 <li><p>To note, the top 10 district with highest Covid-19 cases and Covid-19 death per 10k population differs slightly.</p></li>
 </ul>
 <h3 id="box-map">12.2 Box Map</h3>
-<p>A box map will be used to visualise covid cases spatially across different sub_district in Jakarta.</p>
+<p>A box map will be used to visualise covid cases spatially across different sub-district in Jakarta.</p>
 <p>A customised classification scheme for the choropleth map will be constructed using the basic principles of a box plot.This ensures that data classification is not manipulated, and that the data is visualised accurately to represent the real-world situation. The box map will enable statistical interpretation of outliers and better identification of subzones that have relatively higher or lower demand compared to the rest of the subzones. In this analysis, data points will be considered outliers if they are more than 1.5 times interquartile range.</p>
 <p>The following code chunks are functions to construct the box map which consist of</p>
 <ul>
@@ -3563,7 +3564,8 @@ Level}{Total\ Covid-19\ Cases\ of\ the\ Sub-District} *\ 100\]</span></p>
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>Merged_DF</span> <span class='op'>&lt;-</span> <span class='va'>Covid_DF</span> <span class='op'>%&gt;%</span> <span class='fu'>select</span><span class='op'>(</span><span class='st'>'Cases'</span>, <span class='st'>'Sub_District'</span>,<span class='st'>'Death'</span><span class='op'>)</span>
 
-<span class='va'>Merged_DF</span><span class='op'>&lt;-</span> <span class='fu'>left_join</span><span class='op'>(</span><span class='va'>DKI_Jakarta</span>, <span class='va'>Merged_DF</span>, by<span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Sub_District"</span> <span class='op'>=</span> <span class='st'>"Sub_District"</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>group_by</span> <span class='op'>(</span><span class='va'>Sub_District</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>dplyr</span><span class='fu'>::</span><span class='fu'><a href='https://dplyr.tidyverse.org/reference/summarise.html'>summarise</a></span><span class='op'>(</span>`Case Fatality Rate` <span class='op'>=</span> <span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='va'>Death</span><span class='op'>)</span> <span class='op'>/</span> <span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='va'>Cases</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>*</span><span class='fl'>100</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>ungroup</span><span class='op'>(</span><span class='op'>)</span>
+<span class='va'>Merged_DF</span><span class='op'>&lt;-</span> <span class='fu'>left_join</span><span class='op'>(</span><span class='va'>DKI_Jakarta</span>, <span class='va'>Merged_DF</span>, 
+                      by<span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Sub_District"</span> <span class='op'>=</span> <span class='st'>"Sub_District"</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>group_by</span> <span class='op'>(</span><span class='va'>Sub_District</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>dplyr</span><span class='fu'>::</span><span class='fu'><a href='https://dplyr.tidyverse.org/reference/summarise.html'>summarise</a></span><span class='op'>(</span>`Case Fatality Rate` <span class='op'>=</span> <span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='va'>Death</span><span class='op'>)</span> <span class='op'>/</span> <span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='va'>Cases</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>*</span><span class='fl'>100</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>ungroup</span><span class='op'>(</span><span class='op'>)</span>
 </code></pre>
 </div>
 </div>
@@ -3660,7 +3662,7 @@ Level}{Total\ Covid-19\ Cases\ of\ the\ Sub-District} *\ 100\]</span></p>
 <p><img src="take-home-exercise-1_files/figure-html5/unnamed-chunk-70-1.png" width="624" /></p>
 </div>
 <ul>
-<li><p>In the excess risk map, pale pink sub-district s will indicate a risk lower than Jakarta average, or SMR&lt;1. Red counties indicate a risk higher than the Jakarta average, or SMR&gt;1.</p></li>
+<li><p>In the excess risk map, pale pink sub-district s will indicate a risk lower than Jakarta average, or SMR&lt;1. Red sub-district indicate a risk higher than the Jakarta average, or SMR&gt;1.</p></li>
 <li><p>From the excess risk map, we can observe that a few sub-district in Central Jakarta region has lower excess risk level (&lt;0.50) compared to other region. A possible explanation for this observation may be due to the fact that the 6 main COVID-19 specialized hospital are located in central Jakarta hence mortality rate is lower, though further statistical test need to be carried out.</p></li>
 <li><p>Amongst all the sub-district in Jakarta, we can see that sub-district in North Jakarta appears to be experiencing higher excess risk of mostly &gt;2 compared to other region in Jakarta</p></li>
 </ul>
@@ -3851,7 +3853,7 @@ Non-symmetric neighbours list</code></pre>
 <p><img src="take-home-exercise-1_files/figure-html5/unnamed-chunk-81-1.png" width="624" /></p>
 </div>
 <h3 id="local-morans-i">13.3 Local Moran’s I</h3>
-<p>Local Moran’s I (a local spatial autocorrelation indicator - LISA) will be utilised to detect spatial clusters of sub-district with high or low COVID-19 cases per 10k population rates, and detect outliers. The analysis will be conducted from Mar 2020 to Mar 2021to better analyse and understand spatial clusters and outliers across time.</p>
+<p>Local Moran’s I (a local spatial autocorrelation indicator - LISA) will be utilised to detect spatial clusters of sub-district with high or low COVID-19 cases per 10k population rates, and detect outliers. The analysis will be conducted from Mar 2020 to Mar 2021 to better analyse and understand spatial clusters and outliers across time.</p>
 <p>Interpretation of local Moran’s I values</p>
 <ul>
 <li><p>Ii&lt;0: indicates negative spatial local autocorrelation, suggesting a combination of dissimilar values (high values surrounded by low values, or low values surrounded by high values)</p></li>
@@ -4021,7 +4023,8 @@ max values  :   BAMBU APUS, 18717,         325.423302070876,     25642,   317510
 </ul>
 <p><em>Sub-districts with relatively higher number of confirmed cases</em></p>
 <ul>
-<li>In descending order of Covid rate per 10k population: Gambir, Senayan and Kuningan Timur</li>
+<li><p>In descending order of Covid rate per 10k population: Gambir, Senayan and Gunung were found to be the sub-district most affected by COVID-19</p></li>
+<li><p>Through our Standardized Mortality Rate geospatial analysis, sub-district in North Jakarta appears to be experiencing higher excess risk of mostly &gt;2 compared to other region in Jakarta which may serve as a warning for local public health authority</p></li>
 </ul>
 <h2 id="references">15. References</h2>
 <ul>
