@@ -41,11 +41,11 @@ close to 24% of the cumulative confirmed cases.
 
 ## 2. Problem Statement 
 
-Given that the cumulative confirmed cases were not evenly distributed within DKI Jakarta, this geospatial analysis aim to
+Given that the cumulative confirmed cases were not evenly distributed within DKI Jakarta, this geospatial analysis aims to
 
-- Reveal the spatial-temporal patterns of COVID-19 case in DKI Jakarta 
-- Find out sub-districts with relatively higher number of confirmed cases
-- Identify trends of COVID-19 case in the sub-districts and how they change over time.
+- 1. Reveal the spatial-temporal patterns of COVID-19 case in DKI Jakarta 
+- 2. Find out sub-districts with relatively higher number of confirmed cases
+- 3. Identify trends of COVID-19 case in the sub-districts and how they change over time.
 
 ## 3. Data
 
@@ -72,12 +72,12 @@ exception of missing file for January 2021
 In this exercise, the key R package use is tmap package in R. Beside
 tmap package, seven other R packages will be used. They are:
 
-- sf for handling geospatial data,
+- sf for handling geospatial data
 - tidyverse for subsetting and transforming data 
 - ReadXL for importing XLSX file
 - plotly for data visualization
 - dplyr for data maniupulation
-- plyr for splitting, applying and combining Data 
+- plyr for splitting, applying and combining data 
 - tmap to produce thematic map
 - spdep to create spatial weights matrix objects 
 
@@ -97,7 +97,7 @@ for(p in packages){
 
 Import the data and examine the content of the data set.
 
--Data will first be imported as an sf object to facilitate data pre-processing 
+- Data will first be imported as an sf object to facilitate data pre-processing 
 and initial analysis, then converted to sp class in the later part of the 
 analysis.
 
@@ -121,7 +121,7 @@ and save it into an R dataframe called Covid_DF.
 The task will be performed by using lapply() in combination with read_xlsx() 
 function to identify all the xlsx file and then applying a function to 
 transform the file in the File_List as shown in the code chunk below. We will 
-also be adding 'Date' field to extractthe date from file name in the subsequent step. 
+also be adding 'Date' field to extract the date from file name in the subsequent step. 
 
 ```{r echo=TRUE, eval=TRUE} 
 
@@ -255,7 +255,7 @@ DKI_Jakarta <- filter(DKI_Jakarta, OBJECT_ID > 25383)
 
 
 
-#### 6.1.6 NA, Geometric Validity Checks and Correction
+#### 6.1.6 NA and Geometric Validity Checks 
 
 To check if there are any NA values as a result of data manipulation in the previous step.
 
@@ -355,7 +355,7 @@ are:
 - nama_kelurahan (Sub-district)
 - Meninggal (Deaths)
 - POSITIF (Covid Cases)
-- month
+- Date
 - ID
 
 Hence, we will be only be retaining the 8 columns and this is done by selecting
@@ -381,7 +381,7 @@ A quick look at the XLSX file suggest that a pattern exist in the file names:
 
 - XLSX File Name: Standar Kelurahan Data Corona (28 Februari 2021 Pukul 10.00).xlsx
 
-- The date is formatted as DD-Month-YYY in bracket right before ( and the word 'Pukul'\
+- The date is formatted as DD-Month-YYY in bracket right before '(' and the word 'Pukul'
 
 - Hence, we will use regular expressions to extract the date using the following
 code chunk.
@@ -405,7 +405,7 @@ Covid_DF$Date  <- c(Covid_DF$Date ) %>% as.Date(Covid_DF$Date , format ="%d %B %
 ```
 #### 6.2.5 Translating column name of Covid_DF to English
 
-Next, we will translating column name to English for ease of comprehension 
+Next, we will translating column name to English for ease of comprehension using rename()
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -445,11 +445,12 @@ deaths in Jakarta respectively.
 
 ### 7.1 Joining the Attribute Data & Spatial Data
 
-First, we will left join DKI_Jakarta and Covid_DF by:
+We will use left_join() of dplyr to join the DKI_Jakarta dataframe and Covid_DF dataframe using the following common identifier:
 
 - Province
 - Sub-district
 - City
+
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -513,7 +514,7 @@ the aspatial & spatial data.
 To establish a systematic way of checking for missing values, we will
 compare the two data frame - DKI_Jakarta and Covid_DF. The following code chunk 
 will identify the missing 'sub-district' value by comparing the two Sub-district
-column of the two dataframe - Covid_DF and DKI_Jakarkta
+column of the two dataframe - Covid_DF and DKI_Jakarkta.
 
 ```{r echo=TRUE, eval=TRUE}
 Covid_SD <-c(Covid_DF$Sub_District)
@@ -539,7 +540,7 @@ incorrectly:
 - KALI DERES (Correct: KALIDERES)
 
 
-Apart from spelling mistakes,there were also sub-districts value that have
+Apart from spelling mistakes,there were also sub-districts value that 
 have missing word
 
 - TENGAH (Correct: 'KAMPUNG TENGAH')
@@ -570,8 +571,7 @@ Covid_DF<- Covid_DF %>% mutate(District = ifelse(as.character(District) == "KALI
 
 ### 8.3 Joining the Attribute Data & Spatial Data
 
-To check the sub_district data, we will have to use left_join() of dplyr to join the DKI_Jakarta dataframe
-and Covid_DF dataframe again using common identifier which is 'sub_district' 
+To check the sub_district data, we will have to use left_join() of dplyr to join the DKI_Jakarta dataframe and Covid_DF dataframe again using common identifier which is 'sub_district' 
 
 ```{r echo=TRUE, eval=TRUE}
 
@@ -671,8 +671,8 @@ Following which, it will be group by sub-district and date as we are interested
 to see the change in COVID-19 case rate over time at sub-district level.
 
 
-Finall, the cumulative confirmed cases per 10,0000 population will be
-calculated using summarise function ofof dplyr using the following formula:
+Finally, the cumulative confirmed cases per 10,0000 population will be
+calculated using summarise function of dplyr using the following formula:
 
 $$ Monthly\ Cumulative\ Confirmed\ Cases\  = 
 \frac{Total\ no\ of\ Covid-19\ cases\ at\ Sub-District\ 
@@ -740,6 +740,28 @@ confirmed cases at sub-district level.
 The choropleth map is plotted with custom classification scheme for the month
 of March 2020, as this was the first month which COVID-19 was first detected in Jakarta. 
 
+```{r echo = TRUE, eval = FALSE}
+Jakarta_Covid_Cases_March <- Jakarta_Covid_Cases %>% filter(Date == "2020-03-31")
+
+
+tmap_mode("plot")+
+tm_shape(Jakarta_Covid_Cases_March)+
+tm_fill("Cases Per 10k Population", breaks = c(0, 4, 13, 53, 119, 270, 395, 3808), 
+legend.is.portrait = TRUE) +
+tm_borders(alpha = 0.5) +
+tm_layout(main.title = "Cumulative Confirmed Cases per 10,000 population \n of Jakarta sub-district - March 2020" ,
+            main.title.position = "center",
+            main.title.size = 3.0,title.size = 3.00,
+            legend.outside = FALSE,legend.title.size = 2.90, legend.text.size = 2.60,
+            legend.position = c("left", "bottom"),
+            frame = TRUE)+
+  tm_compass(type="4star", size = 8) + 
+  tm_scale_bar(width = 0.15,text.size = 1.50)+
+  tm_grid(lwd = 0.1, alpha = 0.2,labels.size=2.00) 
+
+``` 
+
+
 ```{r fig.width=26, fig.height=20}
 
 
@@ -786,6 +808,25 @@ tm_fill() is used to illustrate the monthly cumulative confirmed cases at sub-di
 tm_facet() will be used to specify facets (small multiples) which will group
 the data by time period of the COVID-19 case rate. 
 
+```{r echo = TRUE, eval = FALSE}
+
+tm_shape(Jakarta_Covid_Cases) +
+  tm_fill("Cases Per 10k Population", breaks = c(0, 4, 13, 53, 119, 270, 395, 3808),
+          thres.poly = 0,palette = "Reds") + 
+  tm_facets(by="Date", 
+            free.coords=TRUE, 
+            drop.shapes=TRUE) +
+  tm_layout(legend.show = TRUE,
+            title.position = c("center", "center"), 
+            main.title.size = 4,main.title = "Cumulative Covid-19 Rate In Jakarta Sub-District", legend.outside = FALSE,legend.width = 0.70, legend.text.size = 1.80, legend.title.size = 1.80, legend.position = c("left", "bottom"), panel.label.size = 2.5) +
+  tm_compass(type="4star", size = 4) + 
+  tm_scale_bar(width = 0.11,text.size = 1.80)+
+  tm_grid(lwd = 0.1, alpha = 0.2,labels.size=1.50) +
+  tm_borders(alpha = 0.5)
+
+
+```
+
 ```{r fig.width=20, fig.height=35}
 
 tm_shape(Jakarta_Covid_Cases) +
@@ -830,7 +871,7 @@ The output will be saved in gif format.
 Covd_Cases_Animation= tm_shape(Jakarta_Covid_Cases)+ tm_fill("Cases Per 10k Population", breaks = c(0, 4, 13, 53, 119, 270, 395, 3808) ,palette = "Reds") +  tm_facets(along = "Date", free.coords = FALSE)
   
   
-tmap_animation(Covd_Cases_Animation,file="C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/Covid_Case_Animation.gif" , delay = 45)
+tmap_animation(Covd_Cases_Animation,file="C:/Users/User/Desktop/IS415/lye-jia-wei/IS415_blog/_posts/2021-08-30-take-home-exercise-1/AnimatedMap/Covid_Case_Animation.gif" , delay = 45)
 
 
 ```
@@ -927,6 +968,24 @@ with the previous map, we will also filter the date to be March 2020.
 tm_shape() is used to define the input data (Jakarta_Death) and 
 tm_fill() is used to illustrate the monthly cumulative death at sub-district level.
 
+```{r echo = TRUE, eval = FALSE}
+Jakarta_Death_March <- Jakarta_Death %>% filter(Date == "2020-03-31")
+
+tmap_mode("plot")+
+tm_shape(Jakarta_Death_March)+
+tm_fill("Death Per 10k Population", breaks = c(0, 2, 4, 6, 8, 10, 12, 14), 
+legend.is.portrait = TRUE) +
+tm_borders(alpha = 0.5) +
+tm_layout(legend.outside = FALSE,legend.title.size = 3.10, legend.text.size = 2.90,
+            legend.position = c("left", "bottom"),
+            frame = TRUE, main.title = "Cumulative Death per 10k population in Jakarta Sub-district(Mar 2020)", main.title.size = 4)+
+  tm_compass(type="4star", size = 8) + 
+  tm_scale_bar(width = 0.15,text.size = 1.50)+
+  tm_grid(lwd = 0.1, alpha = 0.2,labels.size=2.00) 
+
+```
+
+
 ```{r fig.width=26, fig.height=22}
 
 
@@ -956,6 +1015,27 @@ about 2 to 4 Covid death in March 2020.
 By using tm_facet() and grouping by date in TM_FACETS, we can see the spatial-temporal patterns 
 of COVID-19 death in DKI Jakarta between March 2020 to July 2021.
 
+```{r echo = TRUE, eval = FALSE}
+
+tm_shape(Jakarta_Death) +
+  tm_fill("Death Per 10k Population", breaks = c(4, 8, 12, 16, 20, 24, 28, 32),
+          thres.poly = 0,palette = "Reds") + 
+  tm_facets(by="Date", 
+            free.coords=TRUE, 
+            drop.shapes=TRUE) +
+  tm_layout(legend.show = TRUE, title.position = c("center", "center"), main.title.size = 4, main.title = "   Cumulative Covid-19 Death Rate In Jakarta Sub-District",  legend.outside = FALSE,legend.width = 0.70, legend.text.size = 1.80, legend.title.size = 1.80, legend.position = c("left", "bottom"), panel.label.size = 2.5) +
+  tm_compass(type="4star", size = 4) + 
+  tm_scale_bar(width = 0.10,text.size = 1.80)+
+  tm_grid(lwd = 0.1, alpha = 0.2,labels.size=1.50) +
+  tm_borders(alpha = 0.5)
+
+
+
+
+
+
+
+```
 
 ```{r fig.width=20, fig.height=35}
 
@@ -981,11 +1061,11 @@ tm_shape(Jakarta_Death) +
 
 
 - From the map, it is evident that despite the high covid case per 10k population
-shown earlier, there is a  starkl contrast with the map depicitng covid death per 10k population. This may suggest that Covid-19 death rate is relatively low in the earlier period when COVID-19 was spreading in Jakarta sub-district e.g March 2020 to Dec 2020
+shown earlier, there is a  stark contrast with the map depicitng covid death per 10k population. This may suggest that Covid-19 death rate is relatively low in the earlier period when COVID-19 was spreading in Jakarta sub-district e.g March 2020 to Dec 2020
 
 - By Feb 2021, one particular sub-district, Gambir, stood out as it is the only sub-district with a relatively high (28-32) death per 10k population 
 
-- Death per 10k population increases sharply after May 2020 and appears to be higher in Central Jakarta. The sharp rise in death per 10k population may
+- Death per 10k population increases sharply after May 2021 and appears to be higher in Central Jakarta. The sharp rise in death per 10k population may
 be a result of the more fatal Covid-19 Delta variant, though additional statistical testing needs to be conducted to prove this hypothesis. 
 
 
@@ -1077,8 +1157,7 @@ are located close to each other as seen from the Choropleth map. We will study t
 further in the later part of the analysis. 
 
 
-#### 12.1.2 Bar Chart of Top 10 Sub-District With Highest Covid-19 Death Per 
-10,000 Population
+#### 12.1.2 Bar Chart of Top 10 Sub-District With Highest Covid-19 Death Per 10,000 Population
 
 ##### 12.1.2.1 Combining aspatial and spatial dataframe
 
@@ -1128,7 +1207,7 @@ top_n(Jakarta_Death_Sub_District, n=10, Death_Per_10k) %>%
 
 - As pointed out previously in the Choropleth map, Gambir has one of the highest Covid-19 death per 10k population 
 
-- Again, we can observe that the top sub-district with highest Covid-19 death per 10k population appears to be geographically near to one another
+- Again, we can observe that the top sub-district with highest Covid-19 death per 10k population appears to be geographically near to one another as pointed out in earlier analysis 
 
 - To note, the top 10 district with highest Covid-19 cases and Covid-19 death per 10k population differs slightly. 
 
@@ -1230,7 +1309,12 @@ boxmap_pts <- function(vnam, df, pointdf, mtitle, legtitle=NA, mult=1.5, palette
 ```
 
 We will now use the function using the previous constructed dataframe, Jakarta_Covid_Cases
-to display summary statistics. 
+to display summary statistics.
+
+```{r echo = TRUE, eval = FALSE}
+Covid_Cases_Boxmap <- boxmap("Cases Per 10k Population", Jakarta_Covid_Cases, mtitle="Boxmap of Jakarta Covid Cases, Mar 2020-July 2021")
+Covid_Cases_Boxmap 
+```
 
 ```{r fig.width=12, fig.height=8}
 
@@ -1239,9 +1323,9 @@ Covid_Cases_Boxmap
 ```
 
 
-- The box map reveals that there are more than 40 upper outliers (i.e. sub-district with extremely high COVID-19 cases per 10k population)
+- The box map reveals that there are approximately more than 40 upper outliers (i.e. sub-district with extremely high COVID-19 cases per 10k population)
 
-- upper outliers are disperse geographically throughout Jakarta though more prominent in Central Jakarta
+- Upper outliers are disperse geographically throughout Jakarta though more prominent in Central Jakarta
 
 - To note, most upper outliers are closed to each others.
 
@@ -1311,6 +1395,8 @@ tmap_mode("plot")+
 - From the result, there appears to be difference in case fatality rate across sub-district in Jakarta 
 
 - In line with earlier observation, CFR appears to be generally higher in Central Jakarta region
+
+- Aforementioned in the introduction, the result of the CFR map is in line with the estimated 2% case fatality rate.
 
 ### 12.4 Excess Risk Map
 
@@ -1398,6 +1484,7 @@ tm_shape(Jakarta_Covid_smr) +
 
 
 ```
+
 - In the excess risk map, pale pink sub-district s will indicate a risk lower than Jakarta average, or SMR<1. Red counties indicate a risk higher than the Jakarta average, or SMR>1.
 
 - From the excess risk map, we can observe that generally sub-district that are
@@ -1627,7 +1714,7 @@ JKT_localmoran_Mar21  <- cbind(Jakarta_Covid_Cases_March21_sp , localmoran_Mar21
 
 ```
 
-Here is the coefficients for Local Moran’s I for Mar 2020 for the first 10 sub-district
+Here is the coefficients for Local Moran’s I for Mar 2020 for the first 5 sub-district
 
 - Ii: local Moran statistic
 - E.Ii: expectation of local Moran statistic
@@ -1673,6 +1760,13 @@ localmoran_map <- function(df, Date) {
 
 Plotting the map and arranging the map using tmap_arrange()
 
+```{r echo = TRUE, eval = FALSE}
+moranplot_13 <- localmoran_map(JKT_localmoran_Mar20, "Mar 2020")
+moranplot_32 <- localmoran_map(JKT_localmoran_Mar21, "Mar 2021")
+tmap_arrange(moranplot_13, moranplot_32)
+
+```
+
 ```{r fig.width=20, fig.height=15}
 moranplot_13 <- localmoran_map(JKT_localmoran_Mar20, "Mar 2020")
 moranplot_32 <- localmoran_map(JKT_localmoran_Mar21, "Mar 2021")
@@ -1710,12 +1804,20 @@ pvalue_map <- function(df, Date) {
 
 Plotting the map
 
+```{r echo = TRUE, eval = FALSE}
+tmap_arrange(moranplot_13, pvalue_map(JKT_localmoran_Mar20, "March 2020"),
+             moranplot_32, pvalue_map(JKT_localmoran_Mar21, "March 2021"),
+             ncol=2)
+         
+``` 
+
 ```{r fig.width=20, fig.height=30}
 tmap_arrange(moranplot_13, pvalue_map(JKT_localmoran_Mar20, "March 2020"),
              moranplot_32, pvalue_map(JKT_localmoran_Mar21, "March 2021"),
              ncol=2)
              
 ```             
+
 *March 2020*
 
 -  Relatively high and positive local Moran’s I values as indicated by darker blue areas on the local Moran’s I plot
