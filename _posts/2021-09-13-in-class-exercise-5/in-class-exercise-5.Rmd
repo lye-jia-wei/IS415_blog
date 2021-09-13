@@ -70,10 +70,54 @@ Note:
 
 - No need to set path
 
-- Note that there are some data issue in childcare data frame with the Lat and Lng
-column, the columns should be in numeric data type 
+- Note that there are some data issue in childcare data frame with the `Lat` and `Lng`
+column, the columns should be in numeric data type. The coordinate fields are
+in decimal degrees. Hence, wgs referencing system is assumed. 
 
 ```{r}
 childcare <- read_rds("data/rds/childcare.rds")
 CHAS <- read_rds("data/rds/CHAS.rds")
 ```
+
+## Converting the aspatial data frame into sf objects 
+
+```{r}
+CHAS_sf <- st_as_sf(CHAS, coords = c("X_COORDINATE","Y_COORDINATE"),crs=3414)
+
+
+childcare_sf <- st_as_sf(childcare, coords= c("Lng","Lat"),crs=4326) %>% st_transform(crs=3414)
+```
+
+Note:
+
+- *st_as_sf()* accept coordinates in character data type. 
+
+- No significant difference whether coordinate data type is change 
+
+## Plotting for Reviewing 
+
+Alpha is to set transparency
+
+```{r}
+tmap_mode("view")
+tm_shape(childcare_sf)+tm_dots(alpha= 0.4, col="blue", size=0.05)+ tm_shape(CHAS_sf)+tm_dots(alpha= 0.4, col="red", size=0.05)
+```
+Note:
+
+- childcare is aspatial, need to use childcare_sf 
+
+## Geospatial Data Wrangling 
+
+### Converting from sf to Spatial* data frame
+
+Polygon will be converted so spatial polygon object, point will be converted to spatial
+point. 
+
+```{r}
+childcare <- as_Spatial(childcare_sf)
+CHAS <- as_Spatial(CHAS_sf)
+mpsz <- as_Spatial(mpsz_sf)
+```
+
+### Converting Spatial* data frame into Spatial* Objects
+
