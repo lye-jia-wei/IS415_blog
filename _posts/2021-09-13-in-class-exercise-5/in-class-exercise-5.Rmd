@@ -1,0 +1,79 @@
+---
+title: "In-class Exercise 5"
+description: |
+  A short description of the post.
+author:
+  - name: Lye Jia Wei
+    url: https://lye-jia-wei.github.io/
+date: 09-13-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE, eval=TRUE,echo=TRUE, message=FALSE, error=FALSE, fig.retina=3}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Important to set fig.retina to be 3 in order for subsequent visualization to be
+sharp.
+
+
+## Installing and Loading the R package
+
+- maptools is for creating spatial objectes 
+- sf is for importing geospatialdata 
+- raster is for creating raster object
+- spatstat is for performing Spatial Point Pattern Analysis (SPPA)
+- tmap is for plotting thematic maps
+- tidyverse is for data handling
+
+```{r}
+
+packages <- c('maptools','sf','raster','spatstat','tmap','tidyverse')
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+}
+library(p, character.only=T)
+
+```
+
+## Import the Geospatial Data
+
+The code chunk import shapefile using *st_read()* of **sf** package. The output object
+is in tibble sf object class. 
+
+Pgl_sf and mpsz_sf geospatial data sets into RStudio. 
+
+Note: 
+- Do not paste directory in dsn
+
+- No extension require as this is a SHP file 
+
+```{r}
+Pgl_sf <- st_read(dsn="data/shapefile", layer="Punggol_St")
+                                                                                                                                           
+mpsz_sf <- st_read(dsn="data/shapefile",layer="MP14_SUBZONE_WEB_PL")
+```
+
+Projection is SVY21 
+
+## Import aspatial data from rds folder
+
+*read_rds()* of **readr** package is used instead of *readRDS()* of base R is used. This
+is because output of *read_rds()* is in tibble object. 
+
+Note:
+
+- No need to set path
+
+- Note that there are some data issue in childcare data frame with the Lat and Lng
+column, the columns should be in numeric data type 
+
+```{r}
+childcare <- read_rds("data/rds/childcare.rds")
+CHAS <- read_rds("data/rds/CHAS.rds")
+```
