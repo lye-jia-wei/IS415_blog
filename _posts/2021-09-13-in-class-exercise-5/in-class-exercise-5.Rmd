@@ -1,7 +1,7 @@
 ---
 title: "In-class Exercise 5"
 description: |
-  A short description of the post.
+  In this in-class exercise, we will explore L-function
 author:
   - name: Lye Jia Wei
     url: https://lye-jia-wei.github.io/
