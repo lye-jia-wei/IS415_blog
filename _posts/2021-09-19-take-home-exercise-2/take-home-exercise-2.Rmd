@@ -1,0 +1,1722 @@
+---
+title: "Take-home Exercise 2"
+description: |
+  Spatial Point Patterns Analysis of Airbnb Listing in Singapore
+author:
+  - name: Lye Jia Wei
+    url: https://example.com/norajones
+date: 09-19-2021
+output:
+  distill::distill_article:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE, eval=TRUE, echo=TRUE, message=FALSE, error=FALSE, fig.retina=3}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## 1. Problem Statement
+
+- To investigate if the distribution of Airbnb listings are affected by location factors such as near to existing hotels, MRT services and tourist attractions
+
+- Analyse the impact of COVID-19 on Airbnb business in Singapore by comparing Airbnb listings data on June 2019 and June 2021
+
+## 2. Data
+
+In this analysis, the following dataset were used:
+
+
+
+```{r, layout="l-body",table.with=2}
+
+Data <- c("Airbnb listings for June 2019 and June 2021", "Hotels, tourist attractions", "MRT Stations", "Singapore Costal Outline")
+Format <- c("CSV", "CSV","SHP","SHP")
+Description <- c("Airbnb listings information including room type an location", "Locations of hotels and tourist attractions extracted using OneMap API","Point representation to indicate the location of the MRT station.", "Coastal outline shp file from Data.gov.sg")
+Source <- c("[Airbnb Listing](http://insideairbnb.com/get-the-data.html/)",
+"[OneMap API](https://www.onemap.gov.sg/docs/)","[LTA Datamall ](https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=mrt)" ,"[Data.gov.sg ](https://data.gov.sg/dataset/national-map-polygon)")
+
+
+data_set <- data.frame(Data,Description,Format, Source)
+
+knitr::kable(head(data_set))
+```
+
+
+## 3. Installing and Loading the R packages
+
+In this analysis, CHANGE THIS 8 packages will be used, they are:
+
+- sf, a relatively new R package specially designed to import, manage and process vector-based geospatial data in R.
+
+- spatstat, which has a wide range of useful functions for point pattern analysis. In this hands-on exercise, it will be used to perform 1st- and 2nd-order spatial point patterns analysis and derive kernel density estimation (KDE) layer.
+
+- raster which reads, writes, manipulates, analyses and model of gridded spatial data (i.e. raster). In this hands-on exercise, it will be used to convert image output generate by spatstat into raster format.
+
+- maptools which provides a set of tools for manipulating geographic data. In this hands-on exercise, we mainly use it to convert Spatial objects into ppp format of spatstat.
+
+- tmap which provides functions for plotting cartographic quality static point patterns maps or interactive maps by using leaflet API.
+
+- tidyverse contains a set of essential packages for data manipulation and exploration.
+
+- ggplot2 allows users to create static plots
+
+- plotly is used for creating interactive plots
+
+- OneMap SG API to query Singapore geospatial data from different themes 
+
+Use the code chunk below to install and launch the 8 R packages.
+
+```{r}
+packages = c('sf','rgdal', 'maptools', 'raster','spatstat', 'tmap','tidyverse','ggplot2','ggthemes','plotly','onemapsgapi')
+for (p in packages){
+  if(!require(p, character.only = T)){
+  install.packages(p)
+  }
+library(p,character.only = T)
+}
+```
+
+library(caret)
+library(dplyr)
+library(ggmap)
+
+
+## 4. Data Wrangling
+
+
+### 4.1 Load Airbnb Listings Data
+
+In this section, read_csv() of tidyverse package will be used to import the airbnb data sets into R.
+
+We will name the airbnb listing data dated June 2021 as `airbnb21` while the other data which is dated June 2019 will be named `airbnb19` 
+
+```{r}
+airbnb21 <- read_csv ("data/aspatial/June_2021.csv")
+airbnb19<- read_csv ("data/aspatial/30062019.csv")
+
+```
+
+### 4.1.1  Understanding Airbnb Listings Data
+
+```{r echo = TRUE, eval = FALSE}
+summary(airbnb21)
+summary(airbnb19)
+```
+
+
+
+
+### 4.1.2 Analyse airbnb Availability Data
+
+
+
+With information from Airbnb the value of the availability_365 column is based on the following: 
+
++ The availability is set by the Airbnb host. They can setup a calendar for their listing so that it is only available for a few days or weeks a year. 
++ The host can set their listing to be available for a few days or weeks a year. 
++ The host may also set their listing to be available all year round (except for when it is already booked) 
+
+
+The count of availability_365 of June 2019 is plot on the graph below.
+
+```{r}
+availability2019 <- table(airbnb19$availability_365)
+plot(availability2019, 
+  main="Listings by Availability (2019)",
+  xlab="Days Available",
+  ylab="Count")
+
+
+
+```
+A quick glance at the data suggest that there are about 1300+ listings with availability equals 0, it is highly unlikely for all of them to be fully booked. 
+
+
+
+The count of availability_365 of June 2021 is plot on the graph below.
+
+```{r}
+availability2021 <- table(airbnb21$availability_365)
+plot(availability2021, 
+  main="Listings by Availability (2021)",
+  xlab="Days Available",
+  ylab="Count")
+
+```
+Likewise, in 2021 there are 400 listings with availability equals 0
+
+
+There is a high probability that most of those listings have host that 
+are no longer planning to accept any guest, but host have yet to remove their listing. Hence, we will proceed 
+to filter these listings out. 
+
+```{r}
+airbnb19<- airbnb19 %>% filter(availability_365 != 0)
+airbnb21<- airbnb21 %>% filter(availability_365 != 0)
+```
+
+
+### 4.1.3 Analyse Airbnb Reviews Data
+
+Next, we will plot a graph to find out the distribution of the number of reviews in airbnb19 
+
+```{r}
+
+reviews<- table(airbnb19$number_of_reviews)
+
+plot(reviews, 
+  main="Listings by Reviews (2019)",
+  xlab="Number of Reviews",
+  ylab="Count")
+
+```
+There are about 2500+ listings with 0 reviews, reason they could be 0 could be: 
+
+1) No guest has ever stayed there before 
+2) Guest have stayed but decided not to leave any reviews after the stay
+
+
+Again, we will plot a graph to find out the distribution of the number of reviews in airbnb21
+
+```{r}
+
+reviews<- table(airbnb21$number_of_reviews)
+
+plot(reviews, 
+  main="Listings by Reviews (2021)",
+  xlab="Number of Reviews",
+  ylab="Count")
+
+```
+
+
+We will then remove listings with number of reviews equals 0 since they may be inactive listings. 
+
+```{r}
+airbnb19 <- airbnb19 %>% filter(number_of_reviews != 0)
+airbnb21 <- airbnb21 %>% filter(number_of_reviews != 0)
+```
+
+
+
+
+
+### 4.1.4 CRS check
+
+```{r}
+st_crs(airbnb19)
+st_crs(airbnb21)
+```
+
+A quick CRS check shows that there are no Coordinate Reference System assigned yet. 
+
+
+
+### 4.1.5 NA and Geometric Validity Checks and Correction
+
+```{r}
+airbnb21[rowSums(is.na(airbnb21))!=0,]
+airbnb19[rowSums(is.na(airbnb19))!=0,]
+```
+From the output, it appears that airbnb21 has no missing values while airbnb19 seems to be missing host_name. Hence, we will proceed to drop these values. 
+
+```{r}
+
+airbnb19<- na.omit(airbnb19,c("host_name"))
+
+```
+
+### 4.1.6 CRS Reassignment & Convert to SF class
+
+```{r}
+coordinates(airbnb21)=c("longitude","latitude")
+
+proj4string(airbnb21) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+airbnb21 <- spTransform(airbnb21,CRS("+proj=tmerc +lat_0=1.366666666666667 +lon_0=103.8333333333333
++k=1 +x_0=28001.642 +y_0=38744.572 +datum=WGS84 +units=m
++no_defs +ellps=WGS84 +towgs84=0,0,0 "))
+airbnb21_sf <-st_as_sf(airbnb21)
+
+
+coordinates(airbnb19)=c("longitude","latitude")
+
+proj4string(airbnb19) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+airbnb19 <- spTransform(airbnb19,CRS("+proj=tmerc +lat_0=1.366666666666667 +lon_0=103.8333333333333
++k=1 +x_0=28001.642 +y_0=38744.572 +datum=WGS84 +units=m
++no_defs +ellps=WGS84 +towgs84=0,0,0 "))
+airbnb19_sf <-st_as_sf(airbnb19)
+
+```
+
+### 4.1.7 Geometry Check 
+
+```{r}
+
+
+test <- st_is_valid(airbnb19_sf,reason=TRUE)
+length(which(test!= "Valid Geometry"))
+
+test <- st_is_valid(airbnb21_sf,reason=TRUE)
+length(which(test!= "Valid Geometry"))
+```
+All geometries are valid. We can now plot airbnb19 and airbnb21 .
+
+### 4.1.8 Visualizing airbnb19 for review
+
+```{r}
+tmap_mode("view")
+tm_shape(airbnb19_sf)+tm_dots(alpha= 0.4, col="blue", size=0.05)
+
+```
+From the above plot, we see some suspicious listings in strange location e.g located in parks or in sensitive installation such as military camp 
+
+
+We will proceed to remove these listings by using filter().  
+
+```{r}
+omit <- c("13756029","8156821","1647014","28967232","24585593","35108526","24984672","34157338","18011660","1370852","1407454","1407407","1370803","11965790")
+airbnb19_sf <- filter(airbnb19_sf, !(id %in% omit))
+```
+
+### 4.1.9 Visualizing airbnb21 view
+
+```{r}
+
+tmap_mode("view")
+tm_shape(airbnb21_sf)+tm_dots(alpha= 0.4, col="red", size=0.05)
+
+
+```
+
+Likewise,we will proceed to remove these listings by using filter().  
+
+```{r}
+omit <- c("36009935","36852543","46669109","35917914","11965790","9459389")
+airbnb21_sf<- filter(airbnb21_sf, !(id %in% omit))
+```
+
+### 4.1.10 Converting airbnb19_sf and airbnb_21 sf data frames to sp’s Spatial* class 
+
+The code chunk below uses as_Spatial() of sf package to convert the three geospatial data from simple feature data frame to sp’s Spatial* class.
+
+```{r}
+airbnb19_sf <- as_Spatial(airbnb19_sf)
+airbnb21_sf <-as_Spatial(airbnb21_sf)
+```
+
+
+
+### 4.1.11 Converting the Spatial* class into generic sp format
+
+spatstat requires the analytical data in ppp object form. There is no direct way to convert a Spatial* classes into ppp object. We need to convert the Spatial classes* into Spatial object first.
+
+The codes chunk below converts the Spatial* classes into generic sp objects.
+
+```{r}
+airbnb19_sp <- as(airbnb19_sf, "SpatialPoints")
+airbnb21_sp <- as(airbnb21_sf, "SpatialPoints")
+```
+
+Check the sp objects properties
+
+```{r}
+airbnb19_sp 
+airbnb21_sp 
+```
+### 4.1.12 Converting the generic sp format into spatstat’s ppp format
+
+Now, we will use as.ppp() function of spatstat to convert the spatial data into spatstat’s ppp object format.
+
+```{r}
+airbnb19_ppp  <- as(airbnb19_sp , "ppp")
+airbnb21_ppp  <- as(airbnb21_sp , "ppp")
+
+```
+
+### 4.1.13 Handling duplicated points
+
+We can check the duplication in a ppp object by using the code chunk below.
+
+
+```{r}
+any(duplicated(airbnb19_ppp))
+any(duplicated(airbnb21_ppp ))
+
+```
+
+The code chunk below implements the jittering approach to remove duplicated points.
+
+```{r}
+airbnb19_ppp_jit <- rjitter(airbnb19_ppp, retry=TRUE, nsim=1, drop=TRUE)
+airbnb21_ppp_jit <- rjitter(airbnb21_ppp, retry=TRUE, nsim=1, drop=TRUE)                          
+```                            
+                             
+                             
+
+### 4.2 Load Hotels,Tourism,SG and MRT Data
+
+Next, we will:
+
+- use read_csv to read the hotel and tourist attraction data
+
+- use st_read to read the MRT station data
+
+- use readOGR to read the coastal outline data
+
+```{r}
+
+
+sg <- readOGR(dsn = "data/aspatial", layer="CostalOutline")
+
+Hotels <- read_csv(file="data/aspatial/hotels.csv")
+
+Tourism <- read_csv(file="data/aspatial/tourism.csv")
+
+
+MRT = st_read(dsn="C:/Users/User/Desktop/A1/A2/TakeHomeExercise2/_posts/2021-09-14-take-home-exercise-2/data/aspatial/MRTLRTStnPtt.shp")
+
+```
+```{r}
+
+Hotels$Lat <- as.numeric(Hotels$Lat)
+
+Hotels$Lng <- as.numeric(Hotels$Lng)
+
+coordinates(Hotels)=c("Lng","Lat")
+
+proj4string(Hotels) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+Hotels <- spTransform(Hotels,CRS("+proj=tmerc +lat_0=1.366666666666667 +lon_0=103.8333333333333
++k=1 +x_0=28001.642 +y_0=38744.572 +datum=WGS84 +units=m
++no_defs +ellps=WGS84 +towgs84=0,0,0 "))
+Hotels <-st_as_sf(Hotels)
+Hotels <- as_Spatial(Hotels)
+Hotels <- as(Hotels, "SpatialPoints")
+
+
+
+Tourism$Lat <- as.numeric(Tourism$Lat)
+
+Tourism$Lng <- as.numeric(Tourism$Lng)
+
+coordinates(Tourism)=c("Lng","Lat")
+
+proj4string(Tourism) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+Tourism <- spTransform(Tourism,CRS("+proj=tmerc +lat_0=1.366666666666667 +lon_0=103.8333333333333
++k=1 +x_0=28001.642 +y_0=38744.572 +datum=WGS84 +units=m
++no_defs +ellps=WGS84 +towgs84=0,0,0 "))
+Tourism <-st_as_sf(Tourism)
+Tourism <- as_Spatial(Tourism)
+Tourism<- as(Tourism, "SpatialPoints")
+```
+
+
+
+#### 4.2.1 Create Hotels,Tourist Attractions, MRT simple feature and Spatial data point
+
+```{r}
+
+
+
+
+
+MRT <- st_as_sf(MRT)
+MRT <- as_Spatial(MRT)
+MRT <- as(MRT, "SpatialPoints")
+
+
+
+```
+
+#### 4.2.2 Converting from Spatial objects into ppp objects
+
+```{r}
+Hotels_ppp <- as(Hotels, "ppp")
+Tourism_ppp <- as(Tourism, "ppp")
+MRT_ppp <- as(MRT, "ppp")
+```
+
+### 4.2.3 Remove duplicate points using Jitter
+
+```{r}
+Hotels_jit <- rjitter(Hotels_ppp , retry = TRUE, nsim=1, drop = TRUE)
+Tourism_jit <- rjitter(Tourism_ppp , retry = TRUE, nsim=1, drop = TRUE)
+MRT_jit <- rjitter(MRT_ppp , retry = TRUE, nsim=1, drop = TRUE)
+
+```
+
+
+### 4.3 Create SG Owin Object 
+
+When analysing spatial point patterns, it is a good practice to confine the analysis with a geographical area like Singapore boundary. In spatstat, an object called owin is specially designed to represent this polygonal region.
+
+The code chunk below is used to covert sg SpatialPolygon object into owin object of spatstat.
+
+```{r}
+sg_owin <- as(sg, "owin")
+
+plot(sg_owin)
+```
+
+### 4.4 Combining point events object and owin object
+```{r}
+Airbnb19_ppp = airbnb19_ppp_jit[sg_owin]
+Airbnb21_ppp = airbnb21_ppp_jit[sg_owin]
+Tourism_ppp = Tourism_jit[sg_owin]
+Hotels_ppp = Hotels_jit[sg_owin]
+MRT_ppp=MRT_jit[sg_owin]
+```
+
+## 5. Airbnb Distribution in 2019
+
+### 5.1 Exploratory Spatial Data Analysis
+
+#### 5.1.1 Rescalling KDE values
+
+In the code chunk below, rescale() is used to covert the unit of measurement from meter to kilometer.
+
+```{r}
+
+Tourism_ppp.km <- rescale(Tourism_ppp, 1000, "km")
+
+Airbnb19_ppp.km <- rescale(Airbnb19_ppp, 1000, "km")
+
+Hotels_ppp.km <- rescale(Hotels_ppp, 1000, "km")
+
+MRT_ppp.km <- rescale(MRT_ppp, 1000, "km")
+```
+
+#### 5.1.2 COMPUTING KDE BY USING ADAPTIVE BANDWIDTH
+
+Kernel Density Map of Airbnb (2019)
+
+```{r}
+kde_airbnb19_bw <- density(Airbnb19_ppp.km, sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian")
+plot(kde_airbnb19_bw)
+
+ 
+```
+
+Kernel Density Map of Tourist Attractions
+
+```{r}
+kde_tourism_bw <- density(Tourism_ppp.km, sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian")
+plot(kde_tourism_bw)
+```
+Kernel Density Map of Hotels 
+
+```{r}
+kde_hotels_bw <- density(Hotels_ppp.km, sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian")
+
+plot(kde_hotels_bw)
+```
+
+
+Kernel Density Map of MRT Stations
+
+```{r}
+kde_MRT_bw <- density(MRT_ppp.km , sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian")
+
+plot(kde_MRT_bw)
+```
+
+#### 5.1.2 Converting KDE output into grid objec
+
+The result is the same, we just convert it so that it is suitable for mapping purposes
+
+```{r}
+
+gridded_kde_tourism<- as.SpatialGridDataFrame.im(kde_tourism_bw)
+
+gridded_kde_hotels <- as.SpatialGridDataFrame.im(kde_hotels_bw)
+
+gridded_kde_airbnb19 <- as.SpatialGridDataFrame.im(kde_airbnb19_bw)
+
+gridded_kde_tourism <- as.SpatialGridDataFrame.im(kde_tourism_bw)
+gridded_kde_mrt <- as.SpatialGridDataFrame.im(kde_MRT_bw)
+```
+
+#### 5.1.3 CONVERTING GRIDDED OUTPUT INTO RASTER
+
+Next, we will convert the gridded kernal density objects into RasterLayer object by using raster() of raster package.
+
+```{r}
+
+kde_tourism_bw_raster  <- raster(gridded_kde_tourism)
+
+kde_hotel_bw_raster  <- raster(gridded_kde_hotels)
+
+kde_airbnb19_bw_raster  <- raster(gridded_kde_airbnb19)
+
+
+kde_MRT_bw_raster  <- raster(gridded_kde_mrt)
+```
+
+#### 5.1.4 ASSIGNING PROJECTION SYSTEMS
+
+The code chunk below will be used to include the CRS information
+
+```{r}
+
+projection(kde_MRT_bw_raster) <- CRS("+init=EPSG:3414 +datum=WGS84 +units=km")
+projection(kde_airbnb19_bw_raster) <- CRS("+init=EPSG:3414 +datum=WGS84 +units=km")
+projection(kde_hotel_bw_raster) <- CRS("+init=EPSG:3414 +datum=WGS84 +units=km")
+projection(kde_tourism_bw_raster) <- CRS("+init=EPSG:3414 +datum=WGS84 +units=km")
+```
+
+
+#### 5.1.5 Visualising the output in tmap
+
+Kernel density maps of Tourist Attractions on Openstreetmap of Singapore 
+
+```{r}
+tmap_mode("view")
+tm_shape(kde_tourism_bw_raster) + 
+  tm_raster("v",alpha=0.65) +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+  tm_basemap("OpenStreetMap")
+```
+
+
+
+Kernel density maps of Airbnb Listings (2019) on Openstreetmap of Singapore 
+
+
+```{r}
+
+tm_shape(kde_airbnb19_bw_raster) + 
+  tm_raster("v",alpha=0.65) +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+  tm_basemap("OpenStreetMap")
+```
+
+Kernel density maps of Hotels on Openstreetmap of Singapore 
+
+```{r}
+
+tm_shape(kde_hotel_bw_raster) + 
+  tm_raster("v",alpha=0.65) +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+  tm_basemap("OpenStreetMap")
+```
+Kernel density maps of MRT station on Openstreetmap of Singapore 
+
+```{r}
+
+tm_shape(kde_MRT_bw_raster) + 
+  tm_raster("v",alpha=0.65) +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+  tm_basemap("OpenStreetMap")
+```
+
+#### 5.1.6 Comparing Spatial Point Patterns using KDE
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(gridded_kde_tourism)
+plot(gridded_kde_hotels)
+plot(gridded_kde_airbnb19 )
+plot(gridded_kde_mrt )
+
+
+
+```
+
+### 5.2 Second-order Spatial Point Patterns Analysis
+
+
+#### 5.2.1 Analysing Spatial Point Process Using G-Function
+
+
+PERFORMING COMPLETE SPATIAL RANDOMNESS TEST
+
+
+##### 5.2.1.1 Airbnb 2019 Data
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis and test are as follows:
+
+Ho = The distribution of airbnb are randomly distributed.
+
+H1= The distribution of airbnb are not randomly distributed.
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
+
+Monte Carlo test with G-fucntion
+
+```{r}
+G_airbnb19.csr <- envelope(airbnb19_ppp, Gest, nsim = 40)
+```
+
+```{r}
+plot(G_airbnb19.csr)
+```
+
+
+
+
+##### 5.2.1.2 MRT Data
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis and test are as follows:
+
+Ho = The distribution of MRT are randomly distributed.
+
+H1= The distribution of MRT are not randomly distributed.
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
+
+Monte Carlo test with G-fucntion
+
+```{r}
+G_MRT.csr <- envelope(MRT_ppp, Gest, nsim = 40)
+```
+
+```{r}
+plot(G_MRT.csr)
+```
+
+
+
+##### 5.2.1.3 Attractions Data
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis and test are as follows:
+
+Ho = The distribution of tourist attractions are randomly distributed.
+
+H1= The distribution of tourist attractions  are not randomly distributed.
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
+
+Monte Carlo test with G-fucntion
+
+```{r}
+G_tourism.csr <- envelope(Tourism_ppp, Gest, nsim = 40)
+```
+
+```{r}
+plot(G_tourism.csr)
+```
+
+
+##### 5.2.1.4 Hotels
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis and test are as follows:
+
+Ho = The distribution of hotels are randomly distributed.
+
+H1= The distribution of hotels  are not randomly distributed.
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
+
+Monte Carlo test with G-fucntion
+
+```{r}
+G_hotels.csr <- envelope(Hotels_ppp, Gest, nsim = 40)
+```
+
+```{r}
+plot(G_hotels.csr)
+```
+
+## 6. Section B: Impact of COVID-19
+
+In this section, we will use appropriate tmap function to display the locations of the Airbnb listing by room type, and describe the spatial patterns observed.
+
+Plotting an interactive map to depict the locations of Airbnb listing by room type, with Openstreetmap of Singapore as background. Setting the 4 different room types as different coloured b ubbble, we plot an interactive map to clearly identify which area has the most rooms, and which room type is the most popular.
+
+
+
+### 6.1 Exploratory Spatial Data Analysis
+
+
+#### 6.1.1 Plotting an interactive map to show the various Airbnb room types across Singapore (2019)
+
+
+```{r}
+
+tmap_mode("view") # on view mode
+
+tm_shape(sg) +
+  tm_borders(alpha = 0.5) +
+  tm_shape(airbnb19) +
+  tm_dots(col = 'room_type', size = 0.02, title="Room Type",palette = c("#FF5A5F", "#00A699","#FFFF00"),alpha=0.6) + tmap_options(check.and.fix = TRUE)+
+  tm_basemap("OpenStreetMap")
+```  
+At first glance, it is very clear that the Central Region has the most airbnb listings and that “entire home/apt” is the most frequent room rented out in the Central Region. However, if we take a look at the whole map, it is interesting to note that majority of the listings are of 'private room' category in other areas of Singapore.
+
+
+#### 6.1.2 Plotting an interactive map to show the various Airbnb room types across Singapore (2021)
+
+
+```{r}
+
+tmap_mode("view") # on view mode
+
+tm_shape(sg) +
+  tm_borders(alpha = 0.5) +
+  tm_shape(airbnb21) +
+  tm_dots(col = 'room_type', size = 0.02, title="Room Type",palette = c("#FF5A5F","#800080", "#00A699","#FFFF00"),alpha=0.6) + tmap_options(check.and.fix = TRUE)+
+  tm_basemap("OpenStreetMap")
+``` 
+
+The same observation of Central Region having the most airbnb listings and that “entire home/apt” is the most frequent room rented out in the Central Region remain true in 2021.
+
+From the map, we can also observe that there is a 'hotel room' category which does not exist in 2019 listing. 
+
+A quick glance at the map suggest that overall there seems to be less listings in the year 2021 compared to 2019 
+
+
+
+
+
+#### 6.1.3 Creating New Dataframe by Room Types
+
+We would like to analyse each of the 4 individual room types, to analyse whether they are random or clustered, and if clustered, which are the clustered locations. This will help us in understanding the relationship between location and room type in Singapore.
+
+The following code chunk will create a new dataframe by filtering out the different room types:
+
+- Private Room
+- Shared Room
+- Entire home/apt
+- Hotel Room (2021 airbnb listings only)
+
+
+```{r}
+
+#Private Room 2019
+
+
+
+private_19 <- airbnb19[airbnb19@data$room_type == 'Private room',]
+
+#Private Room 2021
+
+private_21 <- airbnb21[airbnb21@data$room_type == 'Private room',]
+
+
+#Shared Room 2021
+
+shared_21 <- airbnb21[airbnb21@data$room_type == 'Shared room',]
+
+
+#Shared Room 2019
+
+shared_19 <- airbnb19[airbnb19@data$room_type == 'Shared room',]
+
+#Entire home/apt 2021
+
+
+apt_21 <- airbnb21[airbnb21@data$room_type == 'Entire home/apt',]
+
+#Entire home/apt 2019
+
+apt_19 <- airbnb19[airbnb19@data$room_type == 'Entire home/apt',]
+
+
+#Hotels 2021
+
+
+hotel_21 <- airbnb21[airbnb21@data$room_type == 'Hotel room',] 
+
+```
+
+
+
+#### 6.1.3 Plotting for Reviewing
+
+Private Room Type (2021)
+
+
+```{r}
+
+
+
+plot(sg, border="lightgrey")
+plot(sg, add=TRUE)
+plot(private_21, add=TRUE )
+
+
+```
+The graph shows the distribution of Airbnb private room types (2021) across the Singapore map, and we can see significant clustering at the Central area.
+
+Private Room Type (2019)
+
+```{r}
+
+
+
+plot(sg, border="lightgrey")
+plot(sg, add=TRUE)
+plot(private_19, add=TRUE )
+
+
+```
+The graph  shows the distribution of Airbnb private room types across the Singapore map, and we can that private housing listing is significantly more dense in 2021 compared to 2019 throughout Singapore. 
+
+
+Shared Room Type (2021)
+
+```{r}
+
+
+
+plot(sg, border="lightgrey")
+plot(sg, add=TRUE)
+plot(shared_21, add=TRUE )
+
+
+```
+
+The graph shows the distribution of Airbnb shared room types (2021) across the Singapore map, and we can see significant clustering at the Central area and some listings in the north.
+
+
+Shared Room Type (2019)
+
+
+```{r}
+
+
+
+plot(sg, border="lightgrey")
+plot(sg, add=TRUE)
+plot(shared_19, add=TRUE )
+
+
+```
+Unlike private room listings, the shared room listings appears to be more densely clusted in 2019 compared to 2021. 
+
+
+Entire Home/Apartment (2021)
+
+
+```{r}
+
+
+
+plot(sg, border="lightgrey")
+plot(sg, add=TRUE)
+plot(apt_21, add=TRUE )
+
+
+```
+The graph shows the distribution of Airbnb apartment room types (2021) across the Singapore map, and we can see significant clustering at the Central area.
+
+Entire Home/Apartment (2019)
+
+```{r}
+
+
+
+plot(sg, border="lightgrey")
+plot(sg, add=TRUE)
+plot(apt_19, add=TRUE )
+
+
+```
+The graph  shows the distribution of Airbnb apartment room types across the Singapore map, and we can see that the distribution of such room type is more disperse geographically in Singapore compared to other listings, though it is still clustered in the central area of Singapore. 
+
+
+
+Hotel Room Type (2021)
+
+
+```{r}
+
+plot(sg, border="lightgrey")
+plot(sg, add=TRUE)
+plot(hotel_21, add=TRUE )
+
+```
+Hotel room type is only present in the airbnb21 dataframe and it is clustered around central region of Singapore.
+
+
+#### 6.1.4 Converting the Spatial* class into generic sp format
+
+Spatstat requires the analytical data in ppp object form. There is no direct way to convert a Spatial* classes into ppp object. We need to convert the Spatial classes* into Spatial object first.
+
+The codes chunk below converts the Spatial* classes into generic sp objects
+
+```{r}
+private_sp19 <- as(private_19, "SpatialPoints")
+private_sp21 <- as(private_21, "SpatialPoints")
+
+
+apt_sp19 <- as(apt_19, "SpatialPoints")
+apt_sp21 <- as(apt_21, "SpatialPoints")
+
+
+shared_sp19 <- as(shared_19, "SpatialPoints")
+shared_sp21 <- as(shared_21, "SpatialPoints")
+
+hotel_sp21 <- as(hotel_21, "SpatialPoints")
+
+```
+
+#### 6.1.5 Converting the generic sp format into spatstat’s ppp format
+
+```{r}
+private_ppp19 <- as(private_sp19, "ppp")
+private_ppp21 <- as(private_sp21, "ppp")
+
+
+apt_ppp19 <- as(apt_sp19, "ppp")
+apt_ppp21 <- as(apt_sp21, "ppp")
+
+
+shared_ppp19 <- as(shared_sp19, "ppp")
+shared_ppp21 <- as(shared_sp21 , "ppp")
+
+
+hotel_ppp21 <- as(hotel_sp21,"ppp")
+
+
+```
+
+
+#### 6.1.6 Handling duplicated points
+
+The following code chunk will remove duplicate points using Jitter
+```{r}
+
+private_ppp_jit_19 <- rjitter(private_ppp19, retry=TRUE, nsim=1, drop=TRUE)
+private_ppp_jit_21 <- rjitter(private_ppp21, retry=TRUE, nsim=1, drop=TRUE)
+
+
+apt_ppp_jit_19 <- rjitter(apt_ppp19 , retry=TRUE, nsim=1, drop=TRUE)
+apt_ppp_jit_21 <- rjitter(apt_ppp21, retry=TRUE, nsim=1, drop=TRUE)
+
+
+shared_ppp_jit_19 <- rjitter(shared_ppp19  , retry=TRUE, nsim=1, drop=TRUE)
+shared_ppp_jit_21 <- rjitter(shared_ppp21, retry=TRUE, nsim=1, drop=TRUE)
+
+
+hotel_ppp_jit_21 <- rjitter(hotel_ppp21, retry=TRUE, nsim=1, drop=TRUE)
+
+```
+
+
+
+
+
+
+#### 6.1.7 Combining point events object and owin object
+
+```{r}
+privateSG_ppp_19 = private_ppp_jit_19[sg_owin]
+privateSG_ppp_21 = private_ppp_jit_21[sg_owin]
+
+
+shared_ppp_19 = shared_ppp_jit_19[sg_owin]
+shared_ppp_21 = shared_ppp_jit_21[sg_owin]
+
+
+apt_ppp_19 = apt_ppp_jit_19[sg_owin]
+apt_ppp_21 = apt_ppp_jit_21[sg_owin]
+
+
+hotel_ppp_21 = hotel_ppp_jit_21[sg_owin]
+
+
+
+```
+
+
+#### 6.1.8 Visualise ppp object by the density of points using a Gaussian
+(normal) kernel with a 1000m standard deviation (sigma)
+
+
+Kernel Density Map of Private Room Type
+
+```{r}
+plot(density(privateSG_ppp_19, sigma=1000))
+plot(density(privateSG_ppp_21, sigma=1000))
+```
+
+Kernel Density Map of Shared Room Type
+
+```{r}
+plot(density(shared_ppp_19 , sigma=1000))
+plot(density(shared_ppp_21, sigma=1000))
+
+
+```
+
+
+
+Kernel Density Map of Apartment Room Type
+
+```{r}
+plot(density(apt_ppp_19 , sigma=1000))
+plot(density(apt_ppp_21, sigma=1000))
+
+```
+
+Kernel Density Map of Hotel Room Type
+
+```{r}
+plot(density(hotel_ppp_21, sigma=1000))
+
+```
+
+
+            
+#### 6.1.9 Rescale the unit of measurement from meter to kilometer and recalculate density 
+
+```{r}
+apt_ppp19.km <- rescale(apt_ppp_19, 1000, "km")
+kde_apt_19.bw <- density(apt_ppp19.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+
+apt_ppp21.km <- rescale(apt_ppp_21, 1000, "km")
+kde_apt_21.bw <- density(apt_ppp21.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+
+private_ppp19.km <- rescale(privateSG_ppp_19, 1000, "km")
+kde_private_19.bw <- density(private_ppp19.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+
+private_ppp21.km <- rescale(privateSG_ppp_21, 1000, "km")
+kde_private_21.bw <- density(private_ppp21.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+
+shared_ppp19.km <- rescale(shared_ppp_19, 1000, "km")
+kde_shared_19.bw <- density(shared_ppp19.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+
+shared_ppp21.km <- rescale(shared_ppp_21, 1000, "km")
+kde_shared_21.bw <- density(shared_ppp21.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+
+
+
+hotel_ppp21.km <- rescale(hotel_ppp_21, 1000, "km")
+kde_hotel_21.bw <- density(hotel_ppp21.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+
+```
+
+
+
+
+#### 6.1.10 Re-run density() using the rescale data set and plot the output KDE map
+
+
+Kernel Density Map of Private Room Type
+
+```{r}
+plot(kde_private_21.bw)
+plot(kde_private_19.bw )
+```
+
+
+Kernel Density Map of Shared Room Type
+
+```{r}
+plot(kde_shared_21.bw)
+plot(kde_shared_19.bw )
+```
+
+
+Kernel Density Map of Apartment Room Type
+
+```{r}
+plot(kde_apt_21.bw)
+plot(kde_apt_19.bw )
+```
+
+Kernel Density Map of Hotel Room Type
+
+```{r}
+plot(kde_hotel_21.bw)
+
+```
+
+
+#### 6.1.11 Converting KDE output into grid object
+
+The result is the same, we just convert it so that it is suitable for mapping purposes
+
+```{r}
+gridded_kde_private21_bw <- as.SpatialGridDataFrame.im(kde_private_21.bw)
+
+gridded_kde_private19_bw <- as.SpatialGridDataFrame.im(kde_private_19.bw)
+
+
+
+gridded_kde_shared21_bw <- as.SpatialGridDataFrame.im(kde_shared_21.bw)
+
+gridded_kde_shared19_bw <- as.SpatialGridDataFrame.im(kde_shared_19.bw)
+
+
+
+gridded_kde_apt21_bw <- as.SpatialGridDataFrame.im(kde_apt_21.bw)
+
+gridded_kde_apt19_bw <- as.SpatialGridDataFrame.im(kde_apt_19.bw)
+
+gridded_kde_hotel21_bw <- as.SpatialGridDataFrame.im(kde_hotel_21.bw)
+```
+
+
+#### 6.1.12 Converting gridded output into raster
+
+```{r}
+kde_private21_bw_raster <- raster(gridded_kde_private21_bw) 
+
+kde_private19_bw_raster <- raster(gridded_kde_private19_bw) 
+
+
+
+kde_shared21_bw_raster <- raster(gridded_kde_shared21_bw) 
+
+kde_shared19_bw_raster <- raster(gridded_kde_shared19_bw) 
+
+
+
+kde_apt21_bw_raster <- raster(gridded_kde_apt21_bw) 
+
+kde_apt19_bw_raster <- raster(gridded_kde_apt19_bw) 
+
+
+kde_hotel21_bw_raster <- raster(gridded_kde_hotel21_bw) 
+```
+  
+
+#### 6.1.13 Assigning projection systems
+
+```{r}
+projection(kde_private21_bw_raster) <- CRS("+init=EPSG:3414 +datum=WGS84 +units=km")       
+projection(kde_private19_bw_raster) <- CRS("+init=EPSG:3414 +datum=WGS84 +units=km") 
+
+
+
+projection(kde_shared21_bw_raster) <- CRS("+init=EPSG:3414 +datum=WGS84 +units=km") 
+projection(kde_shared19_bw_raster) <- CRS("+init=EPSG:3414 +datum=WGS84 +units=km") 
+
+
+
+projection(kde_apt21_bw_raster) <- CRS("+init=EPSG:3414 +datum=WGS84 +units=km") 
+projection(kde_apt19_bw_raster) <- CRS("+init=EPSG:3414 +datum=WGS84 +units=km") 
+
+
+projection(kde_hotel21_bw_raster) <- CRS("+init=EPSG:3414 +datum=WGS84 +units=km") 
+
+
+```
+
+
+#### 6.1.14 Plotting the kernel density map on openstreetmap of Singapore
+
+
+Kernel Density Map of Private Room Type (2019)
+```{r}
+tmap_mode("view")
+tm_shape(kde_private19_bw_raster) + 
+  tm_raster("v",alpha=0.65) +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+  tm_basemap("OpenStreetMap")
+```
+
+Kernel Density Map of Private Room Type (2021)
+```{r}
+
+tm_shape(kde_private21_bw_raster) + 
+  tm_raster("v",alpha=0.65) +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+  tm_basemap("OpenStreetMap")
+```
+
+Kernel Density Map of Shared Room Type (2019)
+```{r}
+tmap_mode("view")
+tm_shape(kde_shared19_bw_raster) + 
+  tm_raster("v",alpha=0.65) +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+  tm_basemap("OpenStreetMap")
+```
+
+Kernel Density Map of Shared Room Type (2021)
+```{r}
+
+tm_shape(kde_shared21_bw_raster) + 
+  tm_raster("v",alpha=0.65) +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+  tm_basemap("OpenStreetMap")
+```
+
+
+
+Kernel Density Map of Apartment Room Type (2019)
+```{r}
+tmap_mode("view")
+tm_shape(kde_apt19_bw_raster) + 
+  tm_raster("v",alpha=0.65) +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+  tm_basemap("OpenStreetMap")
+```
+
+Kernel Density Map of Apartment Room Type (2021)
+```{r}
+
+tm_shape(kde_apt21_bw_raster) + 
+  tm_raster("v",alpha=0.65) +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+  tm_basemap("OpenStreetMap")
+```
+
+
+Kernel Density Map of Hotel Room Type (2021)
+```{r}
+
+tm_shape(kde_hotel21_bw_raster) + 
+  tm_raster("v",alpha=0.65) +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+  tm_basemap("OpenStreetMap")
+```
+
+
+### 6.2 Second-order Spatial Point Patterns Analysis
+
+
+With reference to the spatial point patterns observed previously, we will attempt to formulate the null hypothesis and alternative hypothesis, and select the confidence level.
+
+Then, we will perform the test by using appropriate 2nd order spatial point patterns analysis technique, before drawing statistical conclusions.
+We will be using G-Function and L-Function to derive our conclusion. This is because the F-Function is based on distance pairs which is not really relevant to us as compared to G-Function which is based on nearest neighbour distances. Since L-Function is the normalised version of K-Function, it will make more sense to use L-Function instead of K-Function.
+
+#### 6.2.1 Analysing Spatial Point Process Using G-Function
+
+
+Private Room  (2019)
+
+G function estimation
+
+```{r}
+
+private19_G = Gest(private_ppp19, correction="border")
+plot(private19_G)
+```
+
+Performing Complete Spatial Randomness Test
+H0: Distribution of private room types in Singapore during 2019 are randomly distributed
+H1: Distribution of private room types  in Singapore during 2019 are not randomly distributed
+Null hypothesis will be rejected if p values is smaller than alpha value of 0.001
+
+Monte Carlo test with G function (1000 simulations)
+
+```{r}
+private19_G.csr <- envelope(private_ppp19, Gest, nsim = 9)
+```
+```{r}
+plot(private19_G.csr)
+```
+Since the estimated G(r) function lies above the envelope from point 0, the estimated G(r) is statistically significant. Reject null hypothesis that the distribution of private room types in Singapore is randomly distributed.
+
+As the G increases rapidly at the start (short distance), this tells us that the points of private room type in Singapore are clustered.
+This observation is consistent with the ppp graph that we have previously plotted to visualise.
+
+
+Private Room  (2021)
+
+G function estimation
+
+```{r}
+
+private21_G = Gest(private_ppp21, correction="border")
+plot(private21_G)
+```
+
+Performing Complete Spatial Randomness Test
+H0: Distribution of private room types in Singapore during 2021 are randomly distributed
+H1: Distribution of private room types  in Singapore during 2021 are not randomly distributed
+Null hypothesis will be rejected if p values is smaller than alpha value of 0.001
+
+
+Monte Carlo test with G function (1000 simulations)
+
+```{r}
+private21_G.csr <- envelope(private_ppp21, Gest, nsim = 9)
+```
+
+```{r}
+plot(private21_G.csr)
+```
+Since the estimated G(r) function lies above the envelope from point 0, the estimated G(r) is statistically significant. Reject null hypothesis that the distribution of private room types in Singapore is randomly distributed.
+
+As the G increases rapidly at the start (short distance), this tells us that the points of private room type in Singapore are clustered.
+This observation is consistent with the ppp graph that we have previously plotted to 
+
+
+Shared Room  (2019)
+
+G function estimation
+
+```{r}
+
+shared19_G = Gest(shared_ppp19, correction="border")
+plot(shared19_G)
+```
+
+Performing Complete Spatial Randomness Test
+H0: Distribution of shared room types in Singapore during 2019 are randomly distributed
+H1: Distribution of shared room types  in Singapore during 2019 are not randomly distributed
+Null hypothesis will be rejected if p values is smaller than alpha value of 0.001
+
+Monte Carlo test with G function (1000 simulations)
+
+```{r}
+shared19_G.csr <- envelope(shared_ppp19, Gest, nsim = 9)
+```
+```{r}
+plot(shared19_G.csr)
+```
+Since the estimated G(r) function lies above the envelope from point 0, the estimated G(r) is statistically significant. Reject null hypothesis that the distribution of private room types in Singapore is randomly distributed.
+
+As the G increases rapidly at the start (short distance), this tells us that the points of shared room type in Singapore are clustered.
+This observation is consistent with the ppp graph that we have previously plotted to visualise.
+
+
+Shared Room  (2021)
+
+G function estimation
+
+```{r}
+
+shared21_G = Gest(shared_ppp21, correction="border")
+plot(shared21_G)
+```
+
+Performing Complete Spatial Randomness Test
+H0: Distribution of shared room types in Singapore during 2021 are randomly distributed
+H1: Distribution of shared room types  in Singapore during 2021 are not randomly distributed
+Null hypothesis will be rejected if p values is smaller than alpha value of 0.001
+
+
+Monte Carlo test with G function (1000 simulations)
+
+```{r}
+shared21_G.csr <- envelope(shared_ppp21, Gest, nsim = 9)
+```
+
+```{r}
+plot(shared21_G.csr)
+```
+Since the estimated G(r) function lies above the envelope from point 0, the estimated G(r) is statistically significant. Reject null hypothesis that the distribution of shared room types in Singapore is randomly distributed.
+
+As the G increases rapidly at the start (short distance), this tells us that the points of shared room type in Singapore are clustered.
+This observation is consistent with the ppp graph that we have previously plotted to visualise.
+
+Apartment Room Type  (2019)
+
+G function estimation
+
+```{r}
+apt19_G = Gest(apt_ppp19, correction="border")
+plot(apt19_G)
+```
+
+Performing Complete Spatial Randomness Test
+H0: Distribution of apartment room types in Singapore during 2019 are randomly distributed
+H1: Distribution of apartment room types  in Singapore during 2019 are not randomly distributed
+Null hypothesis will be rejected if p values is smaller than alpha value of 0.001
+
+Monte Carlo test with G function (1000 simulations)
+
+```{r}
+apt19_G.csr <- envelope(apt_ppp19, Gest, nsim = 9)
+```
+```{r}
+plot(apt19_G.csr)
+```
+Since the estimated G(r) function lies above the envelope from point 0, the estimated G(r) is statistically significant. Reject null hypothesis that the distribution of apartment room types in Singapore is randomly distributed.
+apartment room type in Singapore are clustered.
+This observation is consistent with the ppp graph that we have previously plotted to visualise.
+
+
+Shared Room  (2021)
+
+G function estimation
+
+```{r}
+
+apt21_G = Gest(apt_ppp21, correction="border")
+plot(apt21_G)
+```
+
+Performing Complete Spatial Randomness Test
+H0: Distribution of apartment room types in Singapore during 2021 are randomly distributed
+H1: Distribution of apartment room types  in Singapore during 2021 are not randomly distributed
+Null hypothesis will be rejected if p values is smaller than alpha value of 0.001
+
+
+Monte Carlo test with G function (1000 simulations)
+
+```{r}
+apt21_G.csr <- envelope(apt_ppp21, Gest, nsim = 9)
+```
+
+```{r}
+plot(apt21_G.csr)
+```
+Since the estimated G(r) function lies above the envelope from point 0, the estimated G(r) is statistically significant. Reject null hypothesis that the distribution of apartment room types in Singapore is randomly distributed.
+
+As the G increases rapidly at the start (short distance), this tells us that the points of shared room type in Singapore are clustered.
+This observation is consistent with the ppp graph that we have previously plotted to visualise.
+
+
+Hotel Room  (2021)
+
+G function estimation
+
+```{r}
+
+hotel21_G = Gest(hotel_ppp21, correction="border")
+plot(hotel21_G)
+```
+
+Performing Complete Spatial Randomness Test
+H0: Distribution of hotel room types in Singapore during 2021 are randomly distributed
+H1: Distribution of hotel room types  in Singapore during 2021 are not randomly distributed
+Null hypothesis will be rejected if p values is smaller than alpha value of 0.001
+
+
+Monte Carlo test with G function (1000 simulations)
+
+```{r}
+hotel21_G.csr <- envelope(hotel_ppp21, Gest, nsim = 9)
+```
+
+```{r}
+plot(hotel21_G.csr)
+```
+Since the estimated G(r) function lies above the envelope from point 0, the estimated G(r) is statistically significant. Reject null hypothesis that the distribution of hotel room types in Singapore is randomly distributed.
+
+As the G increases rapidly at the start (short distance), this tells us that the points of hotel room type in Singapore are clustered.
+This observation is consistent with the ppp graph that we have previously plotted to visualise.
+
+
+#### 6.2.2 Analysing Spatial Point Process Using L-Function
+
+Private Room Type (2019)
+
+COMPUTING L FUCNTION ESTIMATION
+
+```{r}
+private19_L = Lest(private_ppp19, correction = "Ripley")
+plot(private19_L , . -r ~ r, 
+     ylab= "L(d)-r", xlab = "d(m)")
+```
+
+PERFORMING COMPLETE SPATIAL RANDOMNESS TEST
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis and test are as follows:
+
+Ho = The distribution of private room in Singapore are randomly distributed.
+
+H1= The distribution of  private room in Singapore are not randomly distributed.
+
+The null hypothesis will be rejected if p-value if smaller than alpha value of 0.001.
+
+The code chunk below is used to perform the hypothesis testing.
+
+```{r}
+private19_G.csr <- envelope(private_ppp19, Lest, nsim = 9, rank = 1, glocal=TRUE)
+```
+
+```{r}
+plot(private19_G.csr, . - r ~ r, xlab="d", ylab="L(d)-r")
+```
+
+
+
+Private Room Type (2021)
+
+COMPUTING L FUCNTION ESTIMATION
+
+```{r}
+private21_L = Lest(private_ppp21, correction = "Ripley")
+plot(private21_L , . -r ~ r, 
+     ylab= "L(d)-r", xlab = "d(m)")
+```
+
+PERFORMING COMPLETE SPATIAL RANDOMNESS TEST
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis and test are as follows:
+
+Ho = The distribution of private room in Singapore are randomly distributed.
+
+H1= The distribution of  private room in Singapore are not randomly distributed.
+
+The null hypothesis will be rejected if p-value if smaller than alpha value of 0.001.
+
+The code chunk below is used to perform the hypothesis testing.
+
+```{r}
+private21_G.csr <- envelope(private_ppp21, Lest, nsim = 9, rank = 1, glocal=TRUE)
+```
+
+```{r}
+plot(private21_G.csr, . - r ~ r, xlab="d", ylab="L(d)-r")
+```
+
+
+Shared Room Type (2019)
+
+COMPUTING L FUCNTION ESTIMATION
+
+```{r}
+shared19_L = Lest(shared_ppp19, correction = "Ripley")
+plot(shared19_L , . -r ~ r, 
+     ylab= "L(d)-r", xlab = "d(m)")
+```
+
+PERFORMING COMPLETE SPATIAL RANDOMNESS TEST
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis and test are as follows:
+
+Ho = The distribution of shared room in Singapore are randomly distributed.
+
+H1= The distribution of  shared room in Singapore are not randomly distributed.
+
+The null hypothesis will be rejected if p-value if smaller than alpha value of 0.001.
+
+The code chunk below is used to perform the hypothesis testing.
+
+```{r}
+shared19_G.csr <- envelope(shared_ppp19, Lest, nsim = 9, rank = 1, glocal=TRUE)
+```
+
+```{r}
+plot(shared19_G.csr, . - r ~ r, xlab="d", ylab="L(d)-r")
+```
+
+
+
+Shared Room Type (2021)
+
+COMPUTING L FUCNTION ESTIMATION
+
+```{r}
+shared21_L = Lest(shared_ppp21, correction = "Ripley")
+plot(shared21_L , . -r ~ r, 
+     ylab= "L(d)-r", xlab = "d(m)")
+```
+
+PERFORMING COMPLETE SPATIAL RANDOMNESS TEST
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis and test are as follows:
+
+Ho = The distribution of shared room in Singapore are randomly distributed.
+
+H1= The distribution of  shared room in Singapore are not randomly distributed.
+
+The null hypothesis will be rejected if p-value if smaller than alpha value of 0.001.
+
+The code chunk below is used to perform the hypothesis testing.
+
+```{r}
+shared21_G.csr <- envelope(shared_ppp21, Lest, nsim = 9, rank = 1, glocal=TRUE)
+```
+
+```{r}
+plot(shared21_G.csr, . - r ~ r, xlab="d", ylab="L(d)-r")
+```
+
+Apartment Room Type (2019)
+
+COMPUTING L FUCNTION ESTIMATION
+
+```{r}
+apt19_L = Lest(apt_ppp19, correction = "Ripley")
+plot(apt19_L , . -r ~ r, 
+     ylab= "L(d)-r", xlab = "d(m)")
+```
+
+PERFORMING COMPLETE SPATIAL RANDOMNESS TEST
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis and test are as follows:
+
+Ho = The distribution of apartment in Singapore are randomly distributed.
+
+H1= The distribution of apartment in Singapore are not randomly distributed.
+
+The null hypothesis will be rejected if p-value if smaller than alpha value of 0.001.
+
+The code chunk below is used to perform the hypothesis testing.
+
+```{r}
+apt19_G.csr <- envelope(apt_ppp19, Lest, nsim = 9, rank = 1, glocal=TRUE)
+```
+
+```{r}
+plot(apt19_G.csr, . - r ~ r, xlab="d", ylab="L(d)-r")
+```
+
+
+
+Apartment Type (2021)
+
+COMPUTING L FUCNTION ESTIMATION
+
+```{r}
+apt21_L = Lest(apt_ppp21, correction = "Ripley")
+plot(apt21_L , . -r ~ r, 
+     ylab= "L(d)-r", xlab = "d(m)")
+```
+
+PERFORMING COMPLETE SPATIAL RANDOMNESS TEST
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis and test are as follows:
+
+Ho = The distribution of apartment in Singapore are randomly distributed.
+
+H1= The distribution of apartment in Singapore are not randomly distributed.
+
+The null hypothesis will be rejected if p-value if smaller than alpha value of 0.001.
+
+The code chunk below is used to perform the hypothesis testing.
+
+```{r}
+apt21_G.csr <- envelope(apt_ppp21, Lest, nsim = 9, rank = 1, glocal=TRUE)
+```
+
+```{r}
+plot(apt21_G.csr, . - r ~ r, xlab="d", ylab="L(d)-r")
+```
+
+
+Hotel Room Type (2021)
+
+COMPUTING L FUCNTION ESTIMATION
+
+```{r}
+hotel21_L = Lest(hotel_ppp21, correction = "Ripley")
+plot(hotel21_L , . -r ~ r, 
+     ylab= "L(d)-r", xlab = "d(m)")
+```
+
+PERFORMING COMPLETE SPATIAL RANDOMNESS TEST
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis and test are as follows:
+
+Ho = The distribution of hotel listings in Singapore are randomly distributed.
+
+H1= The distribution of hotel listings in Singapore are not randomly distributed.
+
+The null hypothesis will be rejected if p-value if smaller than alpha value of 0.001.
+
+The code chunk below is used to perform the hypothesis testing.
+
+```{r}
+hotel21_G.csr <- envelope(hotel_ppp21, Lest, nsim = 9, rank = 1, glocal=TRUE)
+```
+
+```{r}
+plot(hotel21_G.csr, . - r ~ r, xlab="d", ylab="L(d)-r")
+```
