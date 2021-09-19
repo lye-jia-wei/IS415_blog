@@ -12,6 +12,8 @@ navbar:
       menu: 
       - text: "Take-home Exercise 1"
         href: take-home-exercise-1.html
+      - text: "Take-home Exercise 2"
+        href: take-home-exercise-2.html
     - text: "In-class Exercise"
       href: index.html
     - text: "About"
