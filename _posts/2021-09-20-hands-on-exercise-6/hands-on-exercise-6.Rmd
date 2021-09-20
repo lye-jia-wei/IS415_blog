@@ -85,9 +85,95 @@ Now there are 36 variables
 
 Now, we are going to prepare a basemap and choropleth map showing the distribution of GDPPC 2012 by using qtm() of tmap package.
 
-```{r}
-basemap <-tm_shape(hunan) + tm_polygons() + tm_text("NAME_3", size=0.5)
+```{r fig.width=26, fig.height=15}
+basemap <-tm_shape(hunan) + tm_polygons() + tm_text("NAME_3", size=1)
 
-gdppc <- qtm(hunan, "GDPPC")
+gdppc <- qtm(hunan, "GDPPC")+
+tm_layout(legend.outside = FALSE,legend.title.size = 2.10, legend.text.size = 1.90)
 tmap_arrange(basemap,gdppc,asp=1,ncol=2)
 ```
+
+## Computing Contiguity Spatial Weights
+
+### Computing (QUEEN) contiguity based neighbours
+
+
+The code chunk below is used to compute Queen contiguity weight matrix.
+
+```{r}
+wm_q <- poly2nb(hunan, queen=TRUE)
+summary(wm_q)
+```
+
+Polygon 1 has 5 neighbors. The numbers represent the polygon IDs as stored in hunan SpatialPolygonsDataFrame class.
+
+We can retrive the county name of Polygon ID=1 by using the code chunk below:
+
+```{r}
+hunan$County[1]
+```
+
+The output reveals that Polygon ID=1 is Anxiang county.
+
+To reveal the count names of the five neighboring polygons, the code chunk will be used:
+
+```{r}
+hunan$NAME_3[c(2,3,4,57,85)]
+```
+
+We can retrieve the GDPPC of these five counties by using the code chunk below
+```{r}
+nb1 <- wm_q[[1]]
+nb1 <- hunan$GDPPC[nb1]
+nb1
+```
+
+## Plotting Hisogram to visualize distribution 
+
+```{r}
+hist(hunan$GDPPC)
+```
+
+From the output we can see that it is right skewed 
+
+
+## Visualising contiguity weights
+
+```{r}
+longitude <- map_dbl(hunan$geometry, ~st_centroid(.x)[[1]])
+```
+
+We do the same for latitude with one key difference. We access the second value per each centroid with [[2]].
+
+```{r}
+latitude <- map_dbl(hunan$geometry, ~st_centroid(.x)[[2]])
+```
+
+
+Use cbind to put longitude and latitude into the same object.
+
+```{r}
+coords <- cbind(longitude, latitude)
+```
+
+Plotting Queen contiguity based neighbours maps
+
+```{r}
+plot(hunan$geometry, border="lightgrey")
+plot(wm_q, coords, pch = 19, cex = 0.6, add = TRUE, col= "red")
+```
+Plotting Rook contiguity based neighbours maps
+
+```{r}
+plot(hunan$geometry, border="lightgrey")
+plot(wm_q, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(hunan$geometry, border="lightgrey")
+plot(wm_q, coords, pch = 19, cex = 0.6, add = TRUE, col= "red", main="Queen Contiguity")
+plot(hunan$geometry, border="lightgrey")
+plot(wm_r, coords, pch = 19, cex = 0.6, add = TRUE, col = "red", main="Rook Contiguity")
+```
+
