@@ -23,7 +23,7 @@ This code chunk performs three task:
 - create a list of R packages needed.
 
 ```{r echo=TRUE, eval=TRUE}
-packages <- c('sf','tidyverse','ggplot')
+packages <- c('sf','tidyverse','ggplot2')
 for(p in packages){
   if(!require(p, character.only = T)){
     install.packages(p)

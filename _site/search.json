@@ -6,14 +6,14 @@
       "description": "This blog showcase some of my geospatial projects",
       "author": [],
       "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-09-20T12:10:52+08:00"
+      "last_modified": "2021-09-20T20:48:27+08:00"
     },
     {
       "path": "index.html",
       "title": "IS415 blog",
       "author": [],
       "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-09-20T12:10:55+08:00"
+      "last_modified": "2021-09-20T12:37:03+08:00"
     }
   ],
   "collections": ["posts/posts.json"]
