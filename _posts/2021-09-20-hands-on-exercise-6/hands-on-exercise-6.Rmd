@@ -95,6 +95,19 @@ tmap_arrange(basemap,gdppc,asp=1,ncol=2)
 
 ## Computing Contiguity Spatial Weights
 
+### Creating (ROOK) contiguity based neighbours
+
+The code chunk below is used to compute Rook contiguity weight matrix.
+
+```{r}
+wm_r <- poly2nb(hunan, queen=FALSE)
+summary(wm_r)
+```
+
+The summary report above shows that there are 88 area units in Hunan. The most connect area unit has 10 neighbours. There are two area units with only one heighbours.
+
+
+
 ### Computing (QUEEN) contiguity based neighbours
 
 
@@ -167,13 +180,123 @@ Plotting Rook contiguity based neighbours maps
 ```{r}
 plot(hunan$geometry, border="lightgrey")
 plot(wm_q, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+
+
 ```
+
+## Plotting Rook contiguity based neighbours maps
+
+
+```{r}
+
+
+par(mfrow=c(1,2))
+plot(hunan$geometry, border="lightgrey")
+plot(wm_q, coords, pch=19, cex=0.6, add=TRUE, col="red",main="Queen Contiguity")
+plot(hunan$geometry, border="lightgrey")
+plot(wm_r, coords, pch=19, cex=0.6, add=TRUE, col="red",main="Rook Contiguity")
+
+```
+
+## Computing distance based neighbours
+
+Note: Direct distance between centroid of one location to centroid of another
+location 
+
+```{r}
+#coords <- coordinates(hunan)
+k1 <- knn2nb(knearneigh(coords))
+k1dists <- unlist(nbdists(k1, coords, longlat = TRUE))
+summary(k1dists)
+```
+
+The summary report shows that the largest first nearest neighbour distance is *61.79 km*, so using this as the upper threshold gives certainty that all units will have at least one neighbour.
+
+## Computing fixed distance weight matrix
+
+Now, we will compute the distance weight matrix by using dnearneigh() as shown in the code chunk below.
+
+```{r}
+wm_d62 <- dnearneigh(coords, 0, 62, longlat = TRUE)
+wm_d62
+```
+
+
+## Computing distance based neighbours
+
+
+### Determine the cut-off distance
+
+Firstly, we need to determine the upper limit for distance band by using the steps below:
+
++ Return a matrix with the indices of points belonging to the set of the k nearest neighbours of each other by using knearneigh() of spdep.
+
++ Convert the knn object returned by knearneigh() into a neighbours list of class nb with a list of integer vectors containing neighbour region number ids by using knn2nb().
+
++ Return the length of neighbour relationship edges by using nbdists() of spdep. The function returns in the units of the coordinates if the coordinates are projected, in km otherwise.
+
++ Remove the list structure of the returned object by using unlist().
+
+```{r}
+#coords <- coordinates(hunan)
+k1 <- knn2nb(knearneigh(coords))
+k1dists <- unlist(nbdists(k1, coords, longlat = TRUE))
+summary(k1dists)
+```
+
+The summary report shows that the largest first nearest neighbour distance is 61.79 km, so using this as the upper threshold gives certainty that all units will have at least one neighbour.
+
+## Computing fixed distance weight matrix
+
+Now, we will compute the distance weight matrix by using dnearneigh() as shown in the code chunk below.
+
+```{r}
+wm_d62 <- dnearneigh(coords, 0, 62, longlat = TRUE)
+wm_d62
+```
+
+Average number of links: 3.681818” shown above means about 4 neighbours
+
+
+Display the structure of the weight matrix by combining table() and card() of spdep.
+
+```{r}
+table(hunan$County, card(wm_d62))
+```
+
+## Plotting fixed distance weight matrix
+
+Next, we will plot the distance weight matrix by using the code chunk below.
+
+```{r}
+plot(hunan$geometry, border="lightgrey")
+plot(wm_d62, coords, add=TRUE)
+plot(k1, coords, add=TRUE, col="red", length=0.08)
+```
+
+The red lines show the links of 1st nearest neighbours and the black lines show the links of neighbours within the cut-off distance of 62km.
+
+Alternatively, we can plot both of them next to each other by using the code chunk below.
 
 ```{r}
 par(mfrow=c(1,2))
 plot(hunan$geometry, border="lightgrey")
-plot(wm_q, coords, pch = 19, cex = 0.6, add = TRUE, col= "red", main="Queen Contiguity")
+plot(k1, coords, add=TRUE, col="red", length=0.08, main="1st nearest neighbours")
 plot(hunan$geometry, border="lightgrey")
-plot(wm_r, coords, pch = 19, cex = 0.6, add = TRUE, col = "red", main="Rook Contiguity")
+plot(wm_d62, coords, add=TRUE, pch = 19, cex = 0.6, main="Distance link")
 ```
 
+Note: Matrix is binary, if it is within distance it will be indicated as 1 else 0
+
+## Computing adaptive distance weight matrix
+
+Note: Certain location entity may be close while in other location, entity may be far apart 
+
+Look for the 6 closest neighbour 
+
+Control the numbers of neighbours directly using k-nearest neighbours, either accepting asymmetric neighbours or imposing symmetry as shown in the code chunk below.
+
+```{r}
+knn6 <- knn2nb(knearneigh(coords, k=6))
+knn6
+```
