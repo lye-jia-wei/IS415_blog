@@ -56,7 +56,7 @@ library(p,character.only = T)
 
 ## 3. Data Import & Preparation
 
-The code chunk below uses readOGD() of rgdal package to important 
+The code chunk below uses readOGR() of rgdal package to important 
 Punggol_St and Punggol_CC geospatial data sets into RStudio as 
 SpatialLinesDataFrame and SpatialPointsDataFrame respectively.
 
