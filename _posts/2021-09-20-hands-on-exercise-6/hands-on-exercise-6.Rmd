@@ -1,7 +1,7 @@
 ---
-title: "Hands-on Exercise 6"
+title: "In-Class Exercise 6"
 description: |
-  A short description of the post.
+    In this hands-on exercise, I will derive spatial weights by using functions provided by spdep package and appliy these spatial weights to compute geographically referenced attributes.
 author:
   - name: Lye Jia Wei
     url: https://lye-jia-wei.github.io/
@@ -16,8 +16,78 @@ output:
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-Distill is a publication format for scientific and technical writing, native to the web.
+## Useful Reference
 
-Learn more about using Distill at <https://rstudio.github.io/distill>.
+[R-spatial](https://rspatial.github.io/raster/reference/index.html)
 
+- poly2nb() is to create proximity spatial weight
+- Knearneigh() to construct distance matrix and define neighbour 
+  + Fixed Kernel
+  + Adaptive Kernel 
+- nb2listw() to convert so spatial weight
 
+In this hands-on exercise, we will compute spatial weights using R
+
+- import geospatial 
+
+## Getting Started
+
+In this hands-on exercise, the following r packages will be used :
+
+- import geospatial data using appropriate function(s) of rgdal package,
+- import csv file using appropriate function of readr package,
+- perform relational join using appropriate join function of dplyr package,
+- compute spatial weights using appropriate R functions, and
+- calculate spatially lag attributes using appropriate functions of spdep package.
+
+```{r}
+packages = c('sf', 'spdep', 'tmap', 'tidyverse')
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+## Loading Data Into R 
+
+### Import shapefile into r environment
+
+The code chunk below uses st_read() of sf package to import Hunan shapefile into R. The imported shapefile will be simple features Object of sf.
+
+```{r}
+hunan <- st_read(dsn = "data/geospatial", 
+                 layer = "Hunan")
+```
+
+### Import csv file into r environment
+
+Next, we will import Hunan_2012.csv into R by using read_csv() of readr package. The output is R dataframe class.
+
+```{r}
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+There is a total of 29 variables 
+
+## Performing relational join
+
+The code chunk below will be used to update the attribute table of hunan’s SpatialPolygonsDataFrame with the attribute fields of hunan2012 dataframe. This is performed by using left_join() of dplyr package.
+
+```{r}
+hunan <- left_join(hunan,hunan2012)
+```
+
+Now there are 36 variables 
+
+## Visualising Regional Development Indicator
+
+Now, we are going to prepare a basemap and choropleth map showing the distribution of GDPPC 2012 by using qtm() of tmap package.
+
+```{r}
+basemap <-tm_shape(hunan) + tm_polygons() + tm_text("NAME_3", size=0.5)
+
+gdppc <- qtm(hunan, "GDPPC")
+tmap_arrange(basemap,gdppc,asp=1,ncol=2)
+```
